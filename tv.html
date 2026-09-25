@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pit Lane · TV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --floor: #17191b;
+    --panel: #21262a;
+    --line: #363d42;
+    --board: #f2c230;
+    --ink: #ecebe6;
+    --muted: #8b9197;
+    --live: #7fb069;
+    --boost: #5fb86a;
+    --slick: #e07a5f;
+    --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--floor); color: var(--ink); }
+  body {
+    font-family: var(--body);
+    font-size: clamp(16px, 1.5vw, 24px);
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  .hazard {
+    flex: none; height: 10px;
+    background: repeating-linear-gradient(-45deg, var(--board) 0 14px, var(--floor) 14px 28px);
+  }
+  .eyebrow {
+    font-family: var(--display); font-weight: 600; font-size: .9em;
+    letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin: 0 0 .6em;
+  }
+  .center { flex: 1; display: grid; place-items: center; padding: 40px 20px; text-align: center; }
+  .code-input {
+    font-family: var(--display); font-weight: 700; font-size: clamp(64px, 9vw, 110px);
+    letter-spacing: .16em; text-indent: .16em; width: 5.5ch;
+    background: transparent; border: none; border-bottom: 4px solid var(--board);
+    color: var(--ink); text-align: center; text-transform: uppercase; outline: none; padding: 0 0 6px;
+  }
+  .hint { color: var(--muted); margin-top: 1.2em; max-width: 34ch; margin-inline: auto; }
+  .err { color: var(--slick); min-height: 1.4em; margin-top: .8em; }
+
+  /* ---------- lobby ---------- */
+  .lobby {
+    flex: 1; display: grid; gap: clamp(24px, 3vw, 56px);
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    padding: clamp(20px, 3vw, 52px); align-items: start;
+  }
+  .board {
+    background: var(--board); color: var(--floor); border-radius: 6px;
+    padding: .8em 1em 1em; text-align: center;
+  }
+  .board small {
+    font-family: var(--display); font-weight: 600; letter-spacing: .24em;
+    text-transform: uppercase; opacity: .75; font-size: .85em;
+  }
+  .board .code {
+    font-family: var(--display); font-weight: 700; font-size: clamp(80px, 8vw, 132px);
+    line-height: .95; letter-spacing: .1em; text-indent: .1em;
+  }
+  .join { margin-top: 1.2em; display: flex; gap: 1em; align-items: center; }
+  #qr {
+    flex: none; width: clamp(110px, 9vw, 150px); aspect-ratio: 1; max-width: 100%;
+    background: var(--ink); border-radius: 6px; padding: 8px;
+  }
+  #qr img, #qr canvas { width: 100% !important; height: 100% !important; display: block; }
+  .join-text { color: var(--muted); line-height: 1.45; font-size: .9em; }
+  .join-text b { color: var(--ink); font-weight: 600; word-break: break-all; }
+
+  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .slot {
+    display: flex; align-items: center; gap: .9em; padding: .7em 1em; min-height: 3.6em;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  }
+  .slot.open { background: transparent; border-style: dashed; }
+  .slot .pos {
+    font-family: var(--display); font-weight: 700; font-size: 1.5em; min-width: 2.2ch; color: var(--muted);
+  }
+  .slot .nm { font-weight: 600; font-size: 1.35em; overflow-wrap: anywhere; line-height: 1.15; }
+  .slot.open .nm { color: var(--muted); font-weight: 400; font-size: 1.15em; }
+  .slot .sub {
+    font-family: var(--display); font-size: .78em; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--live);
+  }
+  .slot.away .nm { opacity: .45; }
+  .slot.away .sub { color: var(--muted); }
+
+  /* ---------- race ---------- */
+  .race {
+    flex: 1; display: grid; gap: clamp(16px, 2vw, 32px);
+    grid-template-columns: 1fr minmax(240px, 22%);
+    padding: clamp(16px, 2.2vw, 40px);
+  }
+  .race-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1em; flex-wrap: wrap; }
+  .race-head .title {
+    font-family: var(--display); font-weight: 700; font-size: 1.6em;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--board);
+  }
+  .race-head .meta {
+    font-family: var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+  }
+  .event {
+    margin: .7em 0 1em; padding: .7em 1em; background: var(--panel);
+    border-left: 4px solid var(--board); font-size: 1.25em; line-height: 1.3; min-height: 2.3em;
+  }
+  .event.fresh { animation: flash 1.2s ease; }
+  @keyframes flash { from { background: #4a4020; } to { background: var(--panel); } }
+
+  .track {
+    display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px;
+  }
+  .cell {
+    position: relative; aspect-ratio: 1 / .9; max-width: 100%;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 5px;
+    padding: 4px; display: flex; flex-direction: column;
+  }
+  .cell .n {
+    font-family: var(--display); font-weight: 600; font-size: .8em; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .cell .fx {
+    position: absolute; right: 5px; top: 3px;
+    font-family: var(--display); font-weight: 700; font-size: .78em;
+  }
+  .cell.boost { border-color: var(--boost); }
+  .cell.boost .fx { color: var(--boost); }
+  .cell.slick { border-color: var(--slick); }
+  .cell.slick .fx { color: var(--slick); }
+  .cell.flag {
+    background: repeating-conic-gradient(#3b4146 0 25%, var(--panel) 0 50%) 0 0 / 18px 18px;
+    border-color: var(--ink);
+  }
+  .cell.flag .n { color: var(--ink); }
+  .cars { flex: 1; display: flex; flex-wrap: wrap; align-content: flex-end; gap: 3px; }
+  .car {
+    width: clamp(20px, 2.1vw, 34px); height: clamp(20px, 2.1vw, 34px); border-radius: 50%;
+    display: grid; place-items: center; color: var(--floor);
+    font-family: var(--display); font-weight: 700; font-size: clamp(11px, .95vw, 16px);
+    box-shadow: 0 0 0 2px var(--floor);
+  }
+  .car.now { box-shadow: 0 0 0 2px var(--floor), 0 0 0 5px var(--ink); }
+  .startline {
+    display: flex; align-items: center; gap: .8em; margin-bottom: 8px; min-height: 2.2em;
+    color: var(--muted); font-family: var(--display); letter-spacing: .14em; text-transform: uppercase; font-size: .85em;
+  }
+  .startline .cars { flex: none; align-content: center; }
+  .legend {
+    display: flex; gap: 1.6em; flex-wrap: wrap; margin-top: .9em; color: var(--muted); font-size: .85em;
+  }
+  .legend b { font-family: var(--display); }
+  .legend .g { color: var(--boost); }
+  .legend .r { color: var(--slick); }
+
+  .side { display: flex; flex-direction: column; gap: 1.2em; min-width: 0; }
+  .standings { list-style: none; margin: 0; padding: 0; }
+  .standings li {
+    display: flex; align-items: center; gap: .6em; padding: .5em 0; border-bottom: 1px solid var(--line);
+  }
+  .standings .rank {
+    font-family: var(--display); font-weight: 700; color: var(--muted); min-width: 1.4ch;
+    font-variant-numeric: tabular-nums;
+  }
+  .standings .nm { flex: 1; font-weight: 600; overflow-wrap: anywhere; line-height: 1.15; }
+  .standings .sp {
+    font-family: var(--display); font-weight: 700; font-size: 1.15em; font-variant-numeric: tabular-nums;
+  }
+  .standings li.now { background: #2b2a20; }
+  .standings li.now .nm::after {
+    content: ' · rolling'; font-family: var(--display); font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; font-size: .72em; color: var(--board);
+  }
+  .standings li.away .nm { opacity: .45; }
+  .log { list-style: none; margin: 0; padding: 0; color: var(--muted); font-size: .82em; }
+  .log li { padding: .4em 0; border-bottom: 1px solid var(--line); line-height: 1.35; }
+  .side .code-small {
+    font-family: var(--display); font-weight: 700; font-size: 1.1em; letter-spacing: .14em; color: var(--ink);
+  }
+
+  /* ---------- finished ---------- */
+  .done { flex: 1; display: grid; place-items: center; padding: 30px 20px; text-align: center; }
+  .checker {
+    height: 40px; width: min(640px, 90vw); margin: 0 auto 28px; border-radius: 4px;
+    background: repeating-conic-gradient(var(--ink) 0 25%, var(--floor) 0 50%) 0 0 / 40px 40px;
+  }
+  .done .win {
+    font-family: var(--display); font-weight: 700; font-size: clamp(56px, 8vw, 120px);
+    line-height: .95; margin: .1em 0 .3em; overflow-wrap: anywhere;
+  }
+  .done .final { list-style: none; padding: 0; margin: 1em auto 0; max-width: 520px; text-align: left; }
+  .done .final li {
+    display: flex; gap: .8em; align-items: center; padding: .45em 0; border-bottom: 1px solid var(--line);
+  }
+  .done .final .rank { font-family: var(--display); font-weight: 700; color: var(--muted); min-width: 2ch; }
+  .done .final .nm { flex: 1; font-weight: 600; }
+  .done .final .sp { font-family: var(--display); color: var(--muted); }
+
+  .chipdot { width: .9em; height: .9em; border-radius: 50%; flex: none; }
+  .footer-status {
+    position: fixed; right: 14px; bottom: 10px;
+    font-family: var(--display); letter-spacing: .14em; text-transform: uppercase;
+    font-size: 13px; color: var(--muted);
+  }
+  .footer-status.bad { color: var(--slick); }
+
+  @media (max-width: 820px) {
+    .lobby, .race { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .event.fresh { animation: none; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+
+<!-- No code yet -->
+<section id="setup" class="center" hidden>
+  <div>
+    <p class="eyebrow">Type the game code</p>
+    <input id="code-input" class="code-input" maxlength="4" autocomplete="off"
+           autocapitalize="characters" spellcheck="false" aria-label="Game code">
+    <p class="err" id="setup-error" role="alert"></p>
+    <p class="hint">Start a game on a phone first. The phone shows the four-letter code.</p>
+  </div>
+</section>
+
+<!-- Connecting -->
+<section id="connecting" class="center">
+  <div>
+    <p class="eyebrow" id="connecting-text">Connecting to the game server</p>
+    <p class="hint" id="connecting-hint"></p>
+  </div>
+</section>
+
+<!-- Lobby -->
+<main id="lobby" class="lobby" hidden>
+  <div>
+    <p class="eyebrow">Pit Lane</p>
+    <div class="board">
+      <small>Game code</small>
+      <div class="code" id="board-code">----</div>
+    </div>
+    <div class="join">
+      <div id="qr" aria-label="QR code to join"></div>
+      <div class="join-text">Scan with your phone camera, or open<br><b id="join-url"></b><br>and type the code.</div>
+    </div>
+  </div>
+  <div>
+    <p class="eyebrow">Starting grid · <span id="count">0</span> of 8</p>
+    <div class="slots" id="slots"></div>
+  </div>
+</main>
+
+<!-- Race -->
+<main id="race" class="race" hidden>
+  <div>
+    <div class="race-head">
+      <span class="title">Race <span id="race-no">1</span></span>
+      <span class="meta">First to space <span id="track-len">30</span> wins</span>
+    </div>
+    <div class="event" id="event">Lights out!</div>
+    <div class="startline"><span>Grid</span><div class="cars" id="start-cars"></div></div>
+    <div class="track" id="track"></div>
+    <div class="legend">
+      <span><b class="g">+3</b> Boost pad</span>
+      <span><b class="r">−3</b> Oil slick</span>
+      <span>Ringed car is rolling</span>
+    </div>
+  </div>
+  <aside class="side">
+    <div>
+      <p class="eyebrow">Standings</p>
+      <ul class="standings" id="standings"></ul>
+    </div>
+    <div>
+      <p class="eyebrow">Race log</p>
+      <ul class="log" id="log"></ul>
+    </div>
+    <div>
+      <p class="eyebrow">Game code</p>
+      <span class="code-small" id="side-code">----</span>
+    </div>
+  </aside>
+</main>
+
+<!-- Finished -->
+<main id="done" class="done" hidden>
+  <div>
+    <div class="checker"></div>
+    <p class="eyebrow">Checkered flag</p>
+    <p class="win" id="win-name">—</p>
+    <p id="win-text" style="color:var(--muted)"></p>
+    <ul class="final" id="final"></ul>
+    <p class="hint">The host can start another race from their phone.</p>
+  </div>
+</main>
+
+<div class="footer-status" id="net" hidden>Reconnecting</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = ['setup', 'connecting', 'lobby', 'race', 'done'];
+  function show(which) { screens.forEach(function (s) { $(s).hidden = s !== which; }); }
+
+  if (typeof io === 'undefined') {
+    $('connecting-text').textContent = 'Could not reach the game server';
+    $('connecting-hint').textContent = 'Check this device is online, then reload the page.';
+    return;
+  }
+
+  var socket = io();
+  var watching = null;
+  var lastEvent = 0;
+  var fromUrl = (location.pathname.match(/^\/tv\/([A-Za-z]{4})$/) || [])[1];
+
+  setTimeout(function () {
+    if (!socket.connected) $('connecting-hint').textContent =
+      'If nobody has played in a while, the free server takes about a minute to wake up. Keep this page open.';
+  }, 6000);
+
+  function watch(code) {
+    socket.emit('tv:watch', { code: code }, function (res) {
+      if (res && res.error) {
+        watching = null;
+        $('setup-error').textContent = res.error;
+        $('code-input').value = '';
+        show('setup');
+        $('code-input').focus();
+        return;
+      }
+      watching = res.code;
+      history.replaceState(null, '', '/tv/' + res.code);
+    });
+  }
+
+  $('code-input').addEventListener('input', function () {
+    $('setup-error').textContent = '';
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+    if (this.value.length === 4) watch(this.value);
+  });
+
+  socket.on('connect', function () {
+    $('net').hidden = true;
+    if (watching) watch(watching);
+    else if (fromUrl) watch(fromUrl.toUpperCase());
+    else { show('setup'); $('code-input').focus(); }
+  });
+  socket.on('disconnect', function () { $('net').hidden = false; $('net').className = 'footer-status bad'; });
+
+  var qrFor = null;
+  function drawQr(url) {
+    if (qrFor === url || typeof QRCode === 'undefined') return;
+    qrFor = url;
+    $('qr').textContent = '';
+    new QRCode($('qr'), { text: url, width: 256, height: 256, colorDark: '#17191b', colorLight: '#ecebe6' });
+  }
+
+  socket.on('state', function (s) {
+    if (s.code !== watching && s.code !== (fromUrl || '').toUpperCase()) return;
+    if (s.phase === 'lobby') renderLobby(s);
+    else if (s.phase === 'race') renderRace(s);
+    else renderDone(s);
+  });
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function renderLobby(s) {
+    show('lobby');
+    $('board-code').textContent = s.code;
+    var url = location.origin + '/join/' + s.code;
+    $('join-url').textContent = location.host;
+    drawQr(url);
+    $('count').textContent = s.players.length;
+    var slots = $('slots');
+    slots.textContent = '';
+    for (var i = 0; i < s.maxPlayers; i++) {
+      var p = s.players[i];
+      var slot = el('div', 'slot ' + (p ? (p.connected ? 'taken' : 'taken away') : 'open'));
+      var pos = el('div', 'pos', 'P' + (i + 1));
+      if (p) pos.style.color = p.color;
+      var who = el('div');
+      who.appendChild(el('div', 'nm', p ? p.name : 'Open'));
+      if (p) who.appendChild(el('div', 'sub', !p.connected ? 'Phone away' : p.isHost ? 'Ready · Host' : 'Ready'));
+      slot.appendChild(pos);
+      slot.appendChild(who);
+      slots.appendChild(slot);
+    }
+  }
+
+  // Serpentine track: 1–10 left to right, 11–20 back, 21–30 forward again.
+  function cellOrder(track) {
+    var cols = 10, rows = Math.ceil(track / cols), out = [];
+    for (var r = 0; r < rows; r++) {
+      var row = [];
+      for (var c = 1; c <= cols; c++) row.push(r * cols + c);
+      if (r % 2 === 1) row.reverse();
+      out = out.concat(row);
+    }
+    return out;
+  }
+
+  function car(p, now) {
+    var c = el('span', 'car' + (now ? ' now' : ''), 'P' + p.grid);
+    c.style.background = p.color;
+    c.title = p.name;
+    return c;
+  }
+
+  function renderRace(s) {
+    show('race');
+    $('race-no').textContent = s.raceNo;
+    $('track-len').textContent = s.track;
+    $('side-code').textContent = s.code;
+
+    var ev = $('event');
+    if (s.event) {
+      ev.textContent = s.event.text;
+      if (s.event.n !== lastEvent) {
+        lastEvent = s.event.n;
+        ev.classList.remove('fresh'); void ev.offsetWidth; ev.classList.add('fresh');
+      }
+    }
+
+    var racers = s.players.filter(function (p) { return p.inRace; });
+
+    var start = $('start-cars');
+    start.textContent = '';
+    racers.filter(function (p) { return p.pos === 0; })
+      .forEach(function (p) { start.appendChild(car(p, p.id === s.turnId)); });
+
+    var track = $('track');
+    track.textContent = '';
+    cellOrder(s.track).forEach(function (n) {
+      var sp = s.spaces[n];
+      var cell = el('div', 'cell' + (n === s.track ? ' flag' : sp ? ' ' + sp.kind : ''));
+      cell.appendChild(el('span', 'n', n === s.track ? 'Flag' : n));
+      if (sp) cell.appendChild(el('span', 'fx', sp.move > 0 ? '+' + sp.move : '−' + Math.abs(sp.move)));
+      var cars = el('div', 'cars');
+      racers.filter(function (p) { return p.pos === n; })
+        .forEach(function (p) { cars.appendChild(car(p, p.id === s.turnId)); });
+      cell.appendChild(cars);
+      track.appendChild(cell);
+    });
+
+    var order = racers.slice().sort(function (a, b) { return b.pos - a.pos || a.grid - b.grid; });
+    var st = $('standings');
+    st.textContent = '';
+    order.forEach(function (p, i) {
+      var li = el('li', (p.id === s.turnId ? 'now ' : '') + (p.connected ? '' : 'away'));
+      li.appendChild(el('span', 'rank', i + 1));
+      var d = el('span', 'chipdot'); d.style.background = p.color; li.appendChild(d);
+      li.appendChild(el('span', 'nm', p.name));
+      li.appendChild(el('span', 'sp', p.pos));
+      st.appendChild(li);
+    });
+
+    var log = $('log');
+    log.textContent = '';
+    (s.log || []).slice(1, 5).forEach(function (t) { log.appendChild(el('li', '', t)); });
+  }
+
+  function renderDone(s) {
+    show('done');
+    var w = s.players.filter(function (p) { return p.id === s.winnerId; })[0];
+    $('win-name').textContent = w ? w.name + ' wins' : 'Race over';
+    if (w) $('win-name').style.color = w.color;
+    $('win-text').textContent = s.event ? s.event.text : '';
+    var final = $('final');
+    final.textContent = '';
+    s.players.filter(function (p) { return p.inRace; })
+      .sort(function (a, b) { return b.pos - a.pos || a.grid - b.grid; })
+      .forEach(function (p, i) {
+        var li = el('li');
+        li.appendChild(el('span', 'rank', i + 1));
+        var d = el('span', 'chipdot'); d.style.background = p.color; li.appendChild(d);
+        li.appendChild(el('span', 'nm', p.name));
+        li.appendChild(el('span', 'sp', 'space ' + p.pos));
+        final.appendChild(li);
+      });
+  }
+})();
+</script>
+</body>
+</html>

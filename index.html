@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17191b">
+<title>Pit Lane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --floor: #17191b;
+    --panel: #21262a;
+    --panel-2: #2a3035;
+    --line: #363d42;
+    --board: #f2c230;
+    --ink: #ecebe6;
+    --muted: #8b9197;
+    --live: #7fb069;
+    --warn: #e07a5f;
+    --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body: 'Barlow', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--floor); color: var(--ink); }
+  body {
+    min-height: 100svh;
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+  }
+  .hazard {
+    height: 6px;
+    background: repeating-linear-gradient(-45deg, var(--board) 0 10px, var(--floor) 10px 20px);
+  }
+  .banner {
+    background: var(--warn); color: var(--floor);
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    letter-spacing: .14em; text-transform: uppercase;
+    text-align: center; padding: 8px;
+  }
+  .wrap {
+    max-width: 520px; margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 24px calc(32px + env(safe-area-inset-bottom, 0px));
+  }
+  .eyebrow {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700; font-size: 40px;
+    line-height: 1; margin: 0 0 24px; text-wrap: balance;
+  }
+  label {
+    display: block; font-family: var(--display); font-weight: 600; font-size: 14px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  input {
+    width: 100%; font-family: var(--body); font-size: 20px; color: var(--ink);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 15px 16px; outline: none;
+  }
+  input:focus { border-color: var(--board); }
+  input.code {
+    font-family: var(--display); font-weight: 700; font-size: 40px;
+    letter-spacing: .3em; text-indent: .3em; text-align: center; text-transform: uppercase;
+  }
+  .field { margin-bottom: 20px; }
+  .stack { display: grid; gap: 12px; }
+  button {
+    width: 100%; font-family: var(--display); font-weight: 700; font-size: 21px;
+    letter-spacing: .1em; text-transform: uppercase; padding: 17px;
+    border: none; border-radius: 6px; background: var(--board); color: var(--floor);
+    cursor: pointer;
+  }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: .35; cursor: default; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--board); outline-offset: 2px; }
+  .error { color: var(--warn); min-height: 22px; margin: 14px 0 0; font-size: 16px; }
+  .note { color: var(--muted); font-size: 15px; margin: 14px 0 0; }
+  .divider {
+    display: flex; align-items: center; gap: 12px; margin: 26px 0 18px;
+    color: var(--muted); font-family: var(--display); font-size: 14px;
+    letter-spacing: .18em; text-transform: uppercase;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  /* lobby */
+  .codebox {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 18px; margin-bottom: 20px;
+  }
+  .codebox b {
+    font-family: var(--display); font-weight: 700; font-size: 34px;
+    letter-spacing: .16em; color: var(--board);
+  }
+  ul { list-style: none; margin: 0 0 22px; padding: 0; }
+  li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 2px; border-bottom: 1px solid var(--line);
+  }
+  .chip {
+    flex: none; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--floor);
+  }
+  li .nm { flex: 1; font-weight: 500; font-size: 19px; overflow-wrap: anywhere; }
+  li.away .nm { opacity: .45; }
+  li .tag {
+    font-family: var(--display); font-size: 13px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  li .tag.live { color: var(--live); }
+
+  /* race */
+  .me {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px 16px; margin-bottom: 18px;
+  }
+  .me .chip { width: 44px; height: 44px; font-size: 18px; }
+  .me .big {
+    font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .me .small { color: var(--muted); font-size: 15px; }
+  .progress { flex: 1; min-width: 0; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--board); border-radius: 3px; }
+
+  .turn {
+    border-radius: 6px; padding: 16px 18px; margin-bottom: 18px;
+    font-family: var(--display); font-weight: 700; font-size: 26px;
+    letter-spacing: .04em; text-transform: uppercase; line-height: 1.1;
+  }
+  .turn.mine { background: var(--board); color: var(--floor); }
+  .turn.wait { background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
+
+  .hand { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .card {
+    text-transform: none; letter-spacing: normal;
+    display: grid; align-content: start; gap: 6px; text-align: left;
+    min-height: 118px; padding: 12px 11px;
+    background: var(--panel-2); color: var(--ink);
+    border: 2px solid var(--line); border-radius: 8px;
+    font-family: var(--body); font-weight: 400; font-size: 14px;
+  }
+  .card b {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    letter-spacing: .05em; text-transform: uppercase; color: var(--board);
+  }
+  .card.armed { border-color: var(--board); background: #3a3320; }
+  .card:disabled { opacity: 1; }
+  .hand-empty { color: var(--muted); font-size: 15px; margin: 0 0 18px; }
+
+  .roll {
+    font-size: 34px; padding: 26px; letter-spacing: .14em;
+  }
+  .last {
+    margin-top: 18px; padding: 14px 16px; border-left: 3px solid var(--board);
+    background: var(--panel); color: var(--ink); font-size: 16px;
+  }
+
+  /* finish */
+  .flag {
+    height: 34px; margin-bottom: 20px; border-radius: 4px;
+    background:
+      repeating-conic-gradient(var(--ink) 0 25%, var(--floor) 0 50%) 0 0 / 34px 34px;
+  }
+  .winner {
+    font-family: var(--display); font-weight: 700; font-size: 48px; line-height: 1;
+    margin: 0 0 8px; overflow-wrap: anywhere;
+  }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 24px;
+    font-family: var(--display); font-size: 13px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status.on .dot { background: var(--live); }
+  .status.on { color: var(--live); }
+  button.leave {
+    width: auto; background: none; border: none; padding: 8px 0;
+    font-size: 14px; letter-spacing: .14em; color: var(--muted);
+    text-decoration: underline; text-underline-offset: 4px;
+  }
+  button.leave.confirm { color: var(--warn); }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: no-preference) {
+    .bar i { transition: width .5s ease; }
+    .card { transition: border-color .15s ease, background .15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="banner" id="offline" hidden>Reconnecting</div>
+
+<div class="wrap">
+
+  <!-- 1. Name and code -->
+  <section id="entry">
+    <p class="eyebrow">Pit Lane</p>
+    <h1>Take a seat</h1>
+
+    <div class="field">
+      <label for="name">Your driver name</label>
+      <input id="name" maxlength="12" autocomplete="nickname" placeholder="Micah" enterkeyhint="next">
+    </div>
+
+    <div class="field">
+      <label for="code">Game code from the TV</label>
+      <input id="code" class="code" maxlength="4" autocomplete="off" autocapitalize="characters"
+             spellcheck="false" placeholder="ABCD" enterkeyhint="go">
+    </div>
+
+    <button id="btn-join">Join game</button>
+
+    <div class="divider">or</div>
+    <button id="btn-create" class="ghost">Start a new game</button>
+
+    <p class="error" id="entry-error" role="alert"></p>
+    <p class="note" id="entry-status">Connecting to the game server…</p>
+  </section>
+
+  <!-- 2. Lobby -->
+  <section id="lobby" hidden>
+    <p class="eyebrow">Waiting on the grid</p>
+    <div class="codebox"><span>Game code</span><b id="lobby-code">----</b></div>
+    <ul id="lobby-list"></ul>
+    <div class="stack">
+      <button id="btn-start" hidden>Start race</button>
+    </div>
+    <p class="note" id="lobby-note"></p>
+  </section>
+
+  <!-- 3. Race -->
+  <section id="race" hidden>
+    <div class="me">
+      <span class="chip" id="me-chip">P1</span>
+      <div class="progress">
+        <div class="big" id="me-pos">Space 0</div>
+        <div class="small" id="me-sub">of 30 to the flag</div>
+        <div class="bar"><i id="me-bar" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="turn wait" id="turn">Waiting…</div>
+
+    <p class="eyebrow">Your cards <span id="hand-hint" style="letter-spacing:.08em;text-transform:none"></span></p>
+    <div class="hand" id="hand"></div>
+    <p class="hand-empty" id="hand-empty" hidden>No cards left. Just roll.</p>
+
+    <button class="roll" id="btn-roll" hidden>Roll</button>
+
+    <div class="last" id="last" hidden></div>
+  </section>
+
+  <!-- 4. Finished -->
+  <section id="done" hidden>
+    <div class="flag"></div>
+    <p class="eyebrow">Checkered flag</p>
+    <p class="winner" id="winner">—</p>
+    <p class="note" id="done-note" style="margin-bottom:22px"></p>
+    <div class="stack">
+      <button id="btn-again" hidden>Race again</button>
+    </div>
+  </section>
+
+  <p class="error" id="game-error" role="alert"></p>
+  <span class="status" id="status"><span class="dot"></span><span id="status-text">Connecting</span></span>
+  <div style="margin-top:18px">
+    <button class="leave" id="btn-leave" hidden>Leave game</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// Never leave a blank screen: show any failure in words.
+window.addEventListener('error', function (ev) {
+  var box = document.getElementById('entry-error');
+  if (box) box.textContent = 'Something broke on this page: ' + (ev.message || 'unknown error') + '. Reload to try again.';
+});
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  if (typeof io === 'undefined') {
+    $('entry-error').textContent = 'Could not reach the game server. Check your internet connection, then reload.';
+    $('entry-status').textContent = '';
+    return;
+  }
+
+  var store = {
+    get: function (k) { try { return localStorage.getItem('pitlane.' + k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem('pitlane.' + k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem('pitlane.' + k); } catch (e) {} }
+  };
+
+  // This id is how a locked or refreshed phone gets its seat back.
+  var token = store.get('token');
+  if (!token) {
+    token = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    store.set('token', token);
+  }
+
+  var room = store.get('room');
+  var state = null;
+  var me = null;
+  var armed = null;
+  var rolling = false;
+  var live = false;
+
+  $('name').value = store.get('name') || '';
+  var fromUrl = (location.pathname.match(/^\/join\/([A-Za-z]{4})$/) || [])[1];
+  if (fromUrl) $('code').value = fromUrl.toUpperCase();
+
+  function show(which) {
+    ['entry', 'lobby', 'race', 'done'].forEach(function (s) { $(s).hidden = s !== which; });
+    $('btn-leave').hidden = which === 'entry';
+  }
+
+  function setLive(on) {
+    live = on;
+    $('btn-join').disabled = $('btn-create').disabled = !on;
+    $('entry-status').textContent = on ? '' : 'Connecting to the game server…';
+    $('status').className = 'status' + (on ? ' on' : '');
+    $('status-text').textContent = on ? 'Connected' : 'Connecting';
+  }
+
+  show('entry');
+  setLive(false);
+
+  // A free server that has been asleep takes about a minute to wake up.
+  setTimeout(function () {
+    if (!live) $('entry-status').textContent =
+      'Still connecting. If nobody has played in a while the server takes about a minute to wake up. Keep this page open.';
+  }, 6000);
+
+  // Keep the screen awake while playing, where the phone allows it.
+  var lock = null;
+  function wake() {
+    if (!('wakeLock' in navigator) || lock) return;
+    navigator.wakeLock.request('screen').then(function (l) {
+      lock = l;
+      l.addEventListener('release', function () { lock = null; });
+    })['catch'](function () {});
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && room) wake();
+  });
+
+  var socket = io();
+
+  function afterSeat(res) {
+    if (res && res.error) {
+      $('entry-error').textContent = res.error;
+      setLive(true);
+      show('entry');
+      return;
+    }
+    room = res.code;
+    store.set('room', room);
+    store.set('name', $('name').value.trim());
+    history.replaceState(null, '', '/join/' + room);
+    wake();
+  }
+
+  function needName() {
+    if ($('name').value.trim()) return false;
+    $('entry-error').textContent = 'Type your driver name first.';
+    $('name').focus();
+    return true;
+  }
+
+  $('code').addEventListener('input', function () {
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+    $('entry-error').textContent = '';
+  });
+  $('name').addEventListener('input', function () { $('entry-error').textContent = ''; });
+
+  $('btn-join').addEventListener('click', function () {
+    if (needName()) return;
+    if ($('code').value.length !== 4) {
+      $('entry-error').textContent = 'The game code is four letters. It is on the TV.';
+      $('code').focus();
+      return;
+    }
+    $('btn-join').disabled = $('btn-create').disabled = true;
+    socket.emit('room:join', { token: token, name: $('name').value, code: $('code').value }, afterSeat);
+  });
+
+  $('btn-create').addEventListener('click', function () {
+    if (needName()) return;
+    $('btn-join').disabled = $('btn-create').disabled = true;
+    socket.emit('room:create', { token: token, name: $('name').value }, afterSeat);
+  });
+
+  $('btn-start').addEventListener('click', function () {
+    $('btn-start').disabled = true;
+    socket.emit('race:start', {}, function (res) {
+      $('btn-start').disabled = false;
+      $('game-error').textContent = res && res.error ? res.error : '';
+    });
+  });
+  $('btn-again').addEventListener('click', function () { $('btn-start').click(); });
+
+  $('btn-roll').addEventListener('click', function () {
+    if (rolling) return;
+    rolling = true;
+    $('btn-roll').disabled = true;
+    socket.emit('race:turn', { card: armed }, function (res) {
+      rolling = false;
+      armed = null;
+      $('game-error').textContent = res && res.error ? res.error : '';
+      render();
+    });
+  });
+
+  var leaveTimer = null;
+  $('btn-leave').addEventListener('click', function () {
+    var b = $('btn-leave');
+    if (!b.classList.contains('confirm')) {
+      b.classList.add('confirm');
+      b.textContent = 'Tap again to leave for good';
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(function () {
+        b.classList.remove('confirm');
+        b.textContent = 'Leave game';
+      }, 4000);
+      return;
+    }
+    clearTimeout(leaveTimer);
+    b.classList.remove('confirm');
+    b.textContent = 'Leave game';
+    socket.emit('player:leave');
+    room = null; state = null; me = null; armed = null;
+    store.del('room');
+    history.replaceState(null, '', '/');
+    $('entry-error').textContent = '';
+    setLive(true);
+    show('entry');
+  });
+
+  socket.on('connect', function () {
+    setLive(true);
+    $('offline').hidden = true;
+    $('entry-error').textContent = '';
+    if (room) {
+      socket.emit('room:join', { token: token, name: store.get('name'), code: room }, function (res) {
+        if (res && res.error) {
+          room = null;
+          store.del('room');
+          $('entry-error').textContent = 'That game has ended. Start a new one or join another.';
+          show('entry');
+        }
+      });
+    }
+  });
+  socket.on('connect_error', function () {
+    if (!live) return;
+    setLive(false);
+  });
+  socket.on('disconnect', function () {
+    setLive(false);
+    if (room) $('offline').hidden = false;
+  });
+
+  socket.on('me', function (m) { me = m; render(); });
+  socket.on('state', function (s) {
+    if (s.code !== room) return;
+    state = s;
+    render();
+  });
+
+  function chip(p) {
+    var c = document.createElement('span');
+    c.className = 'chip';
+    c.style.background = p.color;
+    c.textContent = 'P' + p.grid;
+    return c;
+  }
+
+  function render() {
+    if (!state || !me) return;
+    var mine = state.players.filter(function (p) { return p.id === me.id; })[0];
+    if (!mine) return;
+
+    if (state.phase === 'lobby') renderLobby(mine);
+    else if (state.phase === 'race') renderRace(mine);
+    else renderDone(mine);
+  }
+
+  function renderLobby(mine) {
+    show('lobby');
+    $('lobby-code').textContent = state.code;
+    var list = $('lobby-list');
+    list.textContent = '';
+    state.players.forEach(function (p) {
+      var li = document.createElement('li');
+      if (!p.connected) li.className = 'away';
+      li.appendChild(chip(p));
+      var nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = p.name + (p.id === me.id ? ' (you)' : '');
+      var tag = document.createElement('span');
+      tag.className = 'tag' + (p.connected ? ' live' : '');
+      tag.textContent = !p.connected ? 'Away' : p.isHost ? 'Host' : 'Ready';
+      li.appendChild(nm); li.appendChild(tag);
+      list.appendChild(li);
+    });
+    $('btn-start').hidden = !me.isHost;
+    $('lobby-note').textContent = me.isHost
+      ? (state.players.length < 2
+          ? 'You can start alone to test it. Racing is better with two or more.'
+          : 'Everyone in? Start the race.')
+      : 'The host starts the race when everyone is in.';
+  }
+
+  function renderRace(mine) {
+    show('race');
+    var c = $('me-chip');
+    c.style.background = mine.color;
+    c.textContent = 'P' + mine.grid;
+    $('me-pos').textContent = 'Space ' + mine.pos;
+    $('me-sub').textContent = (state.track - mine.pos) + ' to the flag';
+    $('me-bar').style.width = Math.round(100 * mine.pos / state.track) + '%';
+
+    var myTurn = state.turnId === me.id && mine.inRace;
+    var turnBox = $('turn');
+    if (!mine.inRace) {
+      turnBox.className = 'turn wait';
+      turnBox.textContent = 'Race in progress. You are on the grid for the next one.';
+    } else if (myTurn) {
+      turnBox.className = 'turn mine';
+      turnBox.textContent = 'Your turn';
+    } else {
+      var who = state.players.filter(function (p) { return p.id === state.turnId; })[0];
+      turnBox.className = 'turn wait';
+      turnBox.textContent = 'Waiting on ' + (who ? who.name : '…');
+    }
+
+    var hand = $('hand');
+    hand.textContent = '';
+    if (armed !== null && armed >= me.hand.length) armed = null;
+    me.hand.forEach(function (card, i) {
+      var b = document.createElement('button');
+      b.className = 'card' + (armed === i ? ' armed' : '');
+      b.disabled = !myTurn;
+      var t = document.createElement('b');
+      t.textContent = card.name;
+      var d = document.createElement('span');
+      d.textContent = card.text;
+      b.appendChild(t); b.appendChild(d);
+      b.setAttribute('aria-pressed', armed === i ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        armed = armed === i ? null : i;
+        render();
+      });
+      hand.appendChild(b);
+    });
+    $('hand-empty').hidden = me.hand.length > 0 || !mine.inRace;
+    $('hand').hidden = !mine.inRace;
+    $('hand-hint').textContent = myTurn && me.hand.length
+      ? '· tap one to play it with this roll'
+      : '· one per turn';
+
+    var roll = $('btn-roll');
+    roll.hidden = !myTurn;
+    roll.disabled = rolling;
+    roll.textContent = armed !== null && me.hand[armed]
+      ? 'Roll + ' + me.hand[armed].name
+      : 'Roll';
+
+    var last = $('last');
+    last.hidden = !state.event;
+    if (state.event) last.textContent = state.event.text;
+  }
+
+  function renderDone(mine) {
+    show('done');
+    var w = state.players.filter(function (p) { return p.id === state.winnerId; })[0];
+    $('winner').textContent = w ? (w.id === me.id ? 'You win!' : w.name + ' wins') : 'Race over';
+    $('done-note').textContent = state.event ? state.event.text : '';
+    $('btn-again').hidden = !me.isHost;
+    if (!me.isHost) $('done-note').textContent += ' The host can start another race.';
+  }
+})();
+</script>
+</body>
+</html>
