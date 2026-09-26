@@ -3,24 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F4ECDD">
+<meta name="theme-color" content="#16122b">
 <title>Super Smash Rolls</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/smash/ui.css">
 <style>
   :root {
-    color-scheme: light;
-    --paper: #F4ECDD;
-    --card: #FFFFFF;
-    --ink: #1E1B2E;
-    --muted: #5E5870;
-    --line: #1E1B2E;
-    --teal: #19B6C9;
-    --gold: #E0A526;
-    --red: #C8362A;
-    --green: #2F8A43;
-    --soft: #EADFCB;
+    color-scheme: dark;
+    --paper: #16122b;
+    --card: #221c3d;
+    --ink: #f4efe6;
+    --on: #16122b;
+    --muted: #b9b0d6;
+    --line: #3a3163;
+    --shadow: #0a0818;
+    --teal: #3ee6e0;
+    --gold: #ffc23d;
+    --red: #ff4f8b;
+    --green: #5ee07a;
+    --soft: #2b2450;
     --display: 'Anton', 'Impact', sans-serif;
     --label: 'Barlow Condensed', 'Arial Narrow', sans-serif;
     --body: 'Barlow', system-ui, -apple-system, sans-serif;
@@ -42,14 +45,14 @@
   button {
     font-family: var(--label); font-weight: 700; font-size: 20px; letter-spacing: .08em; text-transform: uppercase;
     padding: 14px 16px; min-height: 48px; border: 3px solid var(--line); border-radius: 12px;
-    background: var(--gold); color: var(--ink); cursor: pointer; box-shadow: 4px 4px 0 var(--line);
+    background: var(--gold); color: var(--on); cursor: pointer; box-shadow: 4px 4px 0 var(--shadow);
   }
-  button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--line); }
+  button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow); }
   button.wide { width: 100%; }
-  button.ghost { background: var(--card); }
-  button.dark { background: var(--ink); color: #fff; }
-  button.teal { background: var(--teal); }
-  button.small { font-size: 15px; padding: 8px 12px; min-height: 44px; box-shadow: 3px 3px 0 var(--line); }
+  button.ghost { background: var(--card); color: var(--ink); }
+  button.dark { background: #0c0a1c; color: var(--ink); }
+  button.teal { background: var(--teal); color: var(--on); }
+  button.small { font-size: 15px; padding: 8px 12px; min-height: 44px; box-shadow: 3px 3px 0 var(--shadow); }
   button:disabled { opacity: .4; cursor: default; box-shadow: none; transform: none; }
   button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
   .row { display: flex; gap: 10px; align-items: center; }
@@ -58,22 +61,22 @@
   .note { color: var(--muted); font-size: 15px; margin: 12px 0 0; }
   .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 16px; color: var(--muted); font-family: var(--label); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
   .divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--ink); opacity: .2; }
-  .panel { background: var(--card); border: 3px solid var(--line); border-radius: 16px; box-shadow: 5px 5px 0 var(--line); padding: 14px; }
+  .panel { background: var(--card); border: 3px solid var(--line); border-radius: 16px; box-shadow: 5px 5px 0 var(--shadow); padding: 14px; }
   [hidden] { display: none !important; }
 
   /* lobby */
   .codebox { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
   .codebox b { font-family: var(--display); font-weight: 400; font-size: 40px; letter-spacing: .14em; }
   .heroes { display: grid; gap: 12px; margin-bottom: 20px; }
-  .hero {
+  #heroes .hero {
     display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; text-align: left;
     text-transform: none; letter-spacing: normal; font-family: var(--body); font-weight: 400; font-size: 15px;
     background: var(--card); padding: 12px;
   }
-  .hero .mono { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--line); object-fit: cover; object-position: center 25%; display: block; }
-  .hero .hn { font-family: var(--display); font-size: 28px; line-height: 1; }
-  .hero .ht { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
-  .hero[aria-pressed="true"] { background: #FFF6DA; box-shadow: 0 0 0 4px var(--teal), 5px 5px 0 var(--line); }
+  #heroes .hero .mono { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--line); object-fit: cover; object-position: center 25%; display: block; }
+  #heroes .hero .hn { font-family: var(--display); font-size: 28px; line-height: 1; }
+  #heroes .hero .ht { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  #heroes .hero[aria-pressed="true"] { background: #2e2560; box-shadow: 0 0 0 4px var(--teal), 5px 5px 0 var(--line); }
   ul.roster { list-style: none; margin: 0 0 16px; padding: 0; }
   ul.roster li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 2px solid rgba(30,27,46,.12); }
   .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
@@ -91,7 +94,7 @@
   .hpbar i { display: block; height: 100%; background: var(--green); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
   .chip { font-family: var(--label); font-weight: 700; font-size: 14px; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); }
-  .chip.bad { background: #FBD9D3; }
+  .chip.bad { background: #4a1f33; }
   .foes { display: grid; gap: 8px; margin-bottom: 14px; }
   .foe { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 12px; background: var(--card); border: 2px solid var(--line); border-radius: 12px; }
   .foe .fn { font-weight: 700; overflow-wrap: anywhere; line-height: 1.15; }
@@ -103,8 +106,8 @@
   .foe .chips { grid-column: 2 / -1; }
 
   .turn { border: 3px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; font-family: var(--display); font-size: 24px; line-height: 1.1; }
-  .turn.mine { background: var(--gold); }
-  .turn.hit { background: #FBD9D3; }
+  .turn.mine { background: var(--gold); color: var(--on); }
+  .turn.hit { background: #4a1f33; }
   .turn.wait { background: var(--soft); }
   .turn small { display: block; font-family: var(--body); font-size: 15px; margin-top: 4px; }
 
@@ -112,9 +115,9 @@
   .die {
     width: 58px; height: 64px; padding: 4px 2px; border-radius: 12px; border: 3px solid var(--line);
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-    font-family: var(--display); font-size: 26px; line-height: 1; box-shadow: 3px 3px 0 var(--line); text-transform: none; letter-spacing: 0; min-height: 0;
+    font-family: var(--display); font-size: 26px; line-height: 1; box-shadow: 3px 3px 0 var(--shadow); text-transform: none; letter-spacing: 0; min-height: 0;
   }
-  .die small { font-family: var(--label); font-weight: 700; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+  .die small { font-family: var(--label); font-weight: 700; font-size: 10px; letter-spacing: 0; text-transform: uppercase; max-width: 100%; overflow: hidden; white-space: nowrap; }
   .die.blank { background: var(--soft); color: var(--muted); }
   .die.kept { box-shadow: 0 0 0 4px var(--teal), 3px 3px 0 var(--line); transform: translateY(-4px); }
   .die.pick { box-shadow: 0 0 0 4px var(--red), 3px 3px 0 var(--line); }
@@ -129,7 +132,7 @@
   .ab b { font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.05; }
   .ab em { font-style: normal; font-family: var(--label); font-weight: 700; font-size: 14px; color: var(--muted); text-align: right; }
   .ab span { grid-column: 1 / -1; color: var(--muted); }
-  .ab.on { background: #FFF1C9; }
+  .ab.on { background: #3a3060; border-color: var(--gold); }
   .ab.ult.on { background: var(--ink); color: #fff; }
   .ab.ult.on span, .ab.ult.on em { color: #BFE9EF; }
   .ab:disabled { opacity: .45; }
@@ -139,16 +142,42 @@
   .card { background: var(--card); border: 3px solid var(--line); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
   .card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
   .card .kind { font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-  .card .cost { font-family: var(--display); font-size: 20px; color: #9A6B00; }
+  .card .cost { font-family: var(--display); font-size: 20px; color: var(--gold); }
   .card .cn { font-family: var(--display); font-size: 19px; line-height: 1.05; }
   .card .ct { font-size: 14px; flex: 1; }
   .card .why { font-size: 12px; color: var(--muted); min-height: 16px; }
-  .card.upgrade { background: #EAF8FA; }
+  .card.upgrade { background: #14303a; }
   .card .btns { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
-  .card .btns button { font-size: 15px; padding: 8px; min-height: 44px; box-shadow: 2px 2px 0 var(--line); }
+  .card .btns button { font-size: 15px; padding: 8px; min-height: 44px; box-shadow: 2px 2px 0 var(--shadow); }
 
   .event { border-left: 5px solid var(--teal); background: var(--card); padding: 10px 12px; border-radius: 0 10px 10px 0; margin: 0 0 14px; font-size: 15px; }
-  .peek { background: #EAF8FA; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+  .die { position: relative; }
+  .die .rr { position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; font-family: var(--label); font-weight: 700; font-size: 10px; letter-spacing: .06em; padding: 1px 5px; border-radius: 6px; }
+  .result { background: var(--card); border: 3px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+  .result .rt { font-family: var(--label); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .result .rh { font-family: var(--display); font-size: 22px; line-height: 1.1; margin: 2px 0 8px; }
+  .result table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .result td { padding: 3px 0; }
+  .result td.n { text-align: right; font-family: var(--display); font-size: 18px; }
+  .result tr.tot td { border-top: 2px solid var(--line); font-weight: 700; }
+  .result tr.tot td.n { color: var(--red); font-size: 22px; }
+  .result .xd { display: flex; gap: 6px; margin: 4px 0 8px; }
+  .result .xd .die { width: 40px; height: 44px; font-size: 18px; box-shadow: 2px 2px 0 var(--shadow); }
+  .result .xd .die small { font-size: 8px; }
+  .huds { display: grid; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+  .hudbtn { display: block; width: 100%; text-align: left; background: #1c1736; border: 2px solid #2b2450; border-radius: 12px; padding: 10px 10px 12px; box-shadow: none; text-transform: none; letter-spacing: normal; font: inherit; color: inherit; min-height: 0; }
+  .hudbtn.mine { border-color: var(--teal); }
+  .hudbtn:active { transform: none; box-shadow: none; }
+  .table { margin: 6px 0 14px; }
+  .reveal { background: #F6EAD2; color: #1E1B2E; border: 3px solid #E3C98F; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+  .reveal .top { display: flex; justify-content: space-between; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #5E5870; }
+  .reveal .cn { font-family: var(--display); font-size: 22px; line-height: 1.05; margin: 2px 0; }
+  .log { list-style: none; margin: 0; padding: 0; font-size: 14px; color: var(--muted); }
+  .log li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .tvtoggle { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: normal; font-family: var(--body); font-weight: 500; font-size: 15px; color: var(--muted); margin: 14px 0 4px; min-height: 44px; }
+  .tvtoggle input { width: 22px; height: 22px; padding: 0; }
+  .sheet .ssr { font-size: 13px; }
+  .peek { background: #14303a; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
   details.board { margin: 16px 0; }
   details.board summary { font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; padding: 10px 0; min-height: 44px; }
 
@@ -208,13 +237,14 @@
       <button id="btn-start" class="wide">Start the fight</button>
     </div>
     <p class="note" id="lobby-note"></p>
-    <p class="note">TV: open <b id="tv-url"></b> and type the code.</p>
+    <p class="note">TV: open <b id="tv-url"></b> and type the code. No TV? That's fine: everyone can play on their phones, and the table shows up on each phone.</p>
   </section>
 
   <section id="game" hidden>
-    <div class="me panel" id="me"></div>
-    <div class="foes" id="foes"></div>
+    <div class="huds ssr" id="huds"></div>
+    <p class="note" id="huds-hint" style="margin:-4px 0 14px">Tap a player to see their board. Tap a token for what it does.</p>
     <div class="turn wait" id="turn">Waiting…</div>
+    <div class="result" id="result" hidden></div>
     <div class="peek" id="peek" hidden></div>
     <div id="dice-zone" hidden>
       <div class="dice" id="dice"></div>
@@ -225,10 +255,16 @@
     <p class="eyebrow" style="margin-top:18px">Your cards · <span id="cp-hint"></span></p>
     <div class="hand" id="hand"></div>
     <div class="event" id="event" hidden></div>
+    <section class="table" id="table" hidden>
+      <p class="eyebrow">The table <span style="letter-spacing:.06em;text-transform:none">· phone-only view</span></p>
+      <div class="reveal" id="reveal" hidden></div>
+      <ul class="log" id="log"></ul>
+    </section>
     <details class="board" id="board">
       <summary>Your hero board</summary>
-      <div class="abilities" id="board-list"></div>
+      <div class="ssr" id="board-list" style="font-size:13px"></div>
     </details>
+    <label class="tvtoggle"><input type="checkbox" id="phone-only"> Show the whole table on my phone (no TV)</label>
   </section>
 
   <section id="done" hidden>
@@ -258,6 +294,7 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/smash/ui.js"></script>
 <script>
 window.addEventListener('error', function (ev) {
   var box = document.getElementById('game-error') || document.getElementById('entry-error');
@@ -352,6 +389,8 @@ window.addEventListener('error', function (ev) {
     socket.emit('room:create', { token: token, name: $('name').value, code: $('code').value }, afterSeat);
   });
   $('btn-bot').addEventListener('click', function () { send('smash:addBot', {}); });
+  $('phone-only').addEventListener('change', function () { store.set('phoneOnly', this.checked ? 'on' : 'off'); render(); });
+  $('board').addEventListener('toggle', function () { render(); });
   $('btn-start').addEventListener('click', function () { send('smash:start'); });
   $('btn-again').addEventListener('click', function () { send('smash:rematch'); });
 
@@ -502,8 +541,8 @@ window.addEventListener('error', function (ev) {
     left.appendChild(el('div', 'sub', f.name + ' · ' + h.title));
     var stats = el('div', 'row');
     var hp = el('div', 'stat'); hp.appendChild(el('b', '', f.hp)); hp.appendChild(el('span', '', 'HEALTH'));
-    var cp = el('div', 'stat'); cp.appendChild(el('b', '', f.cp)); cp.appendChild(el('span', '', 'CP'));
-    cp.querySelector('b').style.color = '#9A6B00';
+    var cp = el('div', 'stat'); cp.appendChild(el('b', '', f.cp)); cp.appendChild(el('span', '', 'BP'));
+    cp.querySelector('b').style.color = '#ffc23d';
     stats.appendChild(hp); stats.appendChild(cp);
     box.appendChild(left); box.appendChild(stats);
     var bar = el('div', 'hpbar'); var i = el('i'); i.style.width = Math.max(0, Math.round(100 * f.hp / f.maxHp)) + '%';
@@ -522,7 +561,7 @@ window.addEventListener('error', function (ev) {
       nm.appendChild(el('small', '', f.name + (f.bot ? ' · bot' : '') + (f.connected ? '' : ' · away')));
       row.appendChild(nm);
       row.appendChild(el('span', 'fh', f.alive ? f.hp : 'KO'));
-      row.appendChild(el('span', 'fc', f.cp + ' CP · ' + f.cards + ' cards'));
+      row.appendChild(el('span', 'fc', f.cp + ' BP · ' + f.cards + ' cards'));
       var chips = el('div', 'chips'); tokenChips(f, chips); row.appendChild(chips);
       box.appendChild(row);
     });
@@ -534,12 +573,11 @@ window.addEventListener('error', function (ev) {
     if (!mine) {
       $('turn').className = 'turn wait';
       $('turn').textContent = 'Fight in progress. You join the next one.';
-      $('me').hidden = true; $('hand').textContent = ''; $('actions').textContent = '';
+      $('huds').textContent = ''; $('hand').textContent = ''; $('actions').textContent = '';
       return;
     }
-    $('me').hidden = false;
-    renderMe(mine);
-    renderFoes(mine);
+
+    renderHuds(mine);
 
     var act = fighter(state.activeId);
     var myTurn = act && act.id === mine.id && mine.alive;
@@ -549,7 +587,11 @@ window.addEventListener('error', function (ev) {
     // Turn banner
     var tb = $('turn');
     tb.textContent = '';
-    if (!mine.alive) { tb.className = 'turn wait'; tb.textContent = 'Knocked out. Cheer from the sidelines.'; }
+    if (state.waiting && mine.alive) {
+      tb.className = 'turn mine';
+      tb.appendChild(document.createTextNode('Check the result'));
+      tb.appendChild(el('small', '', 'The bot waits until someone taps Continue.'));
+    } else if (!mine.alive) { tb.className = 'turn wait'; tb.textContent = 'Knocked out. Cheer from the sidelines.'; }
     else if (defending) {
       var att = fighter(state.pending.attackerId);
       tb.className = 'turn hit';
@@ -558,7 +600,7 @@ window.addEventListener('error', function (ev) {
     } else if (myTurn) {
       tb.className = 'turn mine';
       var sub = state.step === 'main1' ? (state.skipRoll ? 'You are Drained: no roll this turn.' : 'Play cards or upgrades, then roll.')
-        : state.step === 'roll' ? 'Tap dice to keep them, roll again, then pick an attack.'
+        : state.step === 'roll' ? 'Tap the dice you want to reroll, reroll, then pick an attack.'
         : state.step === 'defend' ? 'Waiting for ' + fighter(state.pending.defenderId).name + ' to defend.'
         : 'Play cards, then end your turn.';
       tb.appendChild(document.createTextNode('Your turn'));
@@ -568,6 +610,8 @@ window.addEventListener('error', function (ev) {
       tb.appendChild(document.createTextNode((act ? act.name + ' (' + hero(act.hero).name + ')' : '…') + "'s turn"));
       if (state.step === 'defend') tb.appendChild(el('small', '', fighter(state.pending.defenderId).name + ' is defending.'));
     }
+
+    renderResult(mine);
 
     // Peek from Seismic Sense
     $('peek').hidden = !me.peek;
@@ -583,17 +627,19 @@ window.addEventListener('error', function (ev) {
       box.textContent = '';
       d.values.forEach(function (v, i) {
         var b = dieEl(owner.hero, v, 'button');
-        if (d.kept[i] && d.kind === 'offense' && !d.done) b.className += ' kept';
+        var marked = d.kind === 'offense' && d.rolled && !d.done && !d.kept[i];
+        if (marked) { b.className += ' pick'; b.appendChild(el('span', 'rr', 'REROLL')); }
         if (d.rolled !== lastRoll && v) b.className += ' rolling';
         b.disabled = !canKeep;
-        b.setAttribute('aria-label', 'Die ' + (i + 1) + ': ' + v + (d.kept[i] ? ', kept' : ''));
+        b.setAttribute('aria-pressed', marked ? 'true' : 'false');
+        b.setAttribute('aria-label', 'Die ' + (i + 1) + ': ' + v + (marked ? ', will reroll' : ''));
         b.addEventListener('click', function () { send('smash:keep', { i: i }); });
         box.appendChild(b);
       });
       lastRoll = d.rolled;
       $('dice-hint').textContent = d.kind === 'defense'
         ? owner.name + "'s defense"
-        : (owner.id === mine.id ? (d.done ? '' : (d.rolled ? d.rollsLeft + ' roll' + (d.rollsLeft === 1 ? '' : 's') + ' left · glowing dice are kept' : d.rollsLeft + ' rolls')) : owner.name + ' is rolling');
+        : (owner.id === mine.id ? (d.done ? '' : (d.rolled ? (d.rollsLeft ? 'Tap the dice you want to reroll · ' + d.rollsLeft + ' reroll' + (d.rollsLeft === 1 ? '' : 's') + ' left' : 'No rerolls left · pick an attack') : d.rollsLeft + ' rolls')) : owner.name + ' is rolling');
     }
 
     // Action buttons
@@ -609,6 +655,7 @@ window.addEventListener('error', function (ev) {
       acts.appendChild(b);
       return b;
     }
+    if (state.waiting) btn('Continue', 'teal', 'smash:continue');
     if (defending && d) {
       if (!d.rolled) btn('Roll defense', 'teal', 'smash:defRoll');
       else btn('Take the hit', '', 'smash:defAccept');
@@ -620,7 +667,8 @@ window.addEventListener('error', function (ev) {
       } else if (state.step === 'roll') {
         if (!d.rolled) btn('Roll', '', 'smash:roll');
         else {
-          if (d.rollsLeft > 0) btn('Roll again (' + d.rollsLeft + ' left)', 'teal', 'smash:roll');
+          var nPick = d.kept.filter(function (k) { return !k; }).length;
+          if (d.rollsLeft > 0) btn(nPick ? 'Reroll ' + nPick + ' ' + (nPick === 1 ? 'die' : 'dice') + ' (' + d.rollsLeft + ' left)' : 'Tap dice to reroll', 'teal', 'smash:roll', !nPick);
           btn('No attack this turn', 'ghost', 'smash:pass');
         }
       } else if (state.step === 'main2') {
@@ -636,17 +684,19 @@ window.addEventListener('error', function (ev) {
       abBox.appendChild(el('p', 'eyebrow', 'Pick an attack'));
       renderAbilityList(abBox, mine, true);
     }
-    renderAbilityList($('board-list'), mine, false);
+    var bl = $('board-list');
+    if ($('board').open) { bl.textContent = ''; bl.appendChild(SSR.board(state, mine, { compact: true })); }
+    renderTable();
 
     // Hand
-    $('cp-hint').textContent = mine.cp + ' CP to spend' + (me.hand.length > 6 ? ' · over the 6-card limit, sell some' : '');
+    $('cp-hint').textContent = mine.cp + ' BP to spend' + (me.hand.length > 6 ? ' · over the 6-card limit, sell some' : '');
     var hand = $('hand');
     hand.textContent = '';
     me.hand.forEach(function (c) {
       var card = el('div', 'card' + (c.type === 'upgrade' ? ' upgrade' : ''));
       var top = el('div', 'top');
       top.appendChild(el('span', 'kind', c.type));
-      top.appendChild(el('span', 'cost', c.cost + ' CP'));
+      top.appendChild(el('span', 'cost', c.cost + ' BP'));
       card.appendChild(top);
       card.appendChild(el('div', 'cn', c.name));
       card.appendChild(el('div', 'ct', c.text));
@@ -657,7 +707,7 @@ window.addEventListener('error', function (ev) {
       play.addEventListener('click', function () { startCard(c); });
       var sell = el('button', 'small ghost', 'Sell');
       sell.disabled = !myTurn || busy;
-      sell.setAttribute('aria-label', 'Sell ' + c.name + ' for 1 CP');
+      sell.setAttribute('aria-label', 'Sell ' + c.name + ' for 1 BP');
       sell.addEventListener('click', function () { send('smash:sell', { i: c.i }); });
       btns.appendChild(play); btns.appendChild(sell);
       card.appendChild(btns);
@@ -670,6 +720,91 @@ window.addEventListener('error', function (ev) {
     if (state.event) ev.textContent = state.event.text;
 
     if (sheet) refreshSheet();
+  }
+
+  // The last attack, spelled out: damage, what blocked it, what was taken.
+  function renderResult(mine) {
+    var r = state.result;
+    var box = $('result');
+    box.hidden = !r;
+    if (!r) return;
+    box.textContent = '';
+    var att = fighter(r.attackerId);
+    box.appendChild(el('div', 'rt', 'Last attack'));
+    box.appendChild(el('div', 'rh', (att.id === mine.id ? 'Your ' : att.name + "'s ") + r.ability));
+    if (r.extraDice) {
+      var xd = el('div', 'xd');
+      r.extraDice.forEach(function (v) { xd.appendChild(dieEl(att.hero, v)); });
+      box.appendChild(xd);
+    }
+    r.hits.forEach(function (h) {
+      var t = fighter(h.targetId);
+      var tbl = el('table');
+      function row(label, n, cls) {
+        var tr = el('tr', cls || ''); tr.appendChild(el('td', '', label)); tr.appendChild(el('td', 'n', n)); tbl.appendChild(tr);
+      }
+      var extra = [];
+      if (r.bonus) extra.push('+' + r.bonus + ' bonus');
+      if (r.might) extra.push('+' + (r.might * 2) + ' Might');
+      row('Attack' + (extra.length ? ' (' + extra.join(', ') + ')' : '') + (h.pure ? ' · cannot be reduced' : ''), h.raw);
+      h.blocks.forEach(function (b) { row('Blocked by ' + b[0], '−' + b[1]); });
+      row((t.id === mine.id ? 'You took' : t.name + ' took'), h.taken, 'tot');
+      if (h.heal) row((t.id === mine.id ? 'You healed' : t.name + ' healed'), '+' + h.heal);
+      if (h.back) row((att.id === mine.id ? 'You took' : att.name + ' took') + ' back', h.back);
+      row((t.id === mine.id ? 'Your' : t.name + "'s") + ' health', h.hpBefore + ' → ' + h.hpAfter);
+      box.appendChild(tbl);
+    });
+    if (r.selfChange) box.appendChild(el('p', 'note', (att.id === mine.id ? 'You ' : att.name + ' ') + (r.selfChange > 0 ? 'healed ' + r.selfChange : 'took ' + (-r.selfChange)) + ' from the move itself.'));
+  }
+
+  // HUD Slash bar for every player. Tap the bar for their board, a token for details.
+  function renderHuds(mine) {
+    var box = $('huds');
+    box.textContent = '';
+    state.fighters.forEach(function (f, i) {
+      var b = el('div', 'hudbtn' + (f.id === mine.id ? ' mine' : ''));
+      b.setAttribute('role', 'button');
+      b.tabIndex = 0;
+      b.setAttribute('aria-label', "Show " + f.name + "'s board");
+      b.appendChild(SSR.hud(state, f, { playerNo: i + 1, you: f.id === mine.id, onEffect: function (fid, eid) { openSheet({ kind: 'fx', fid: fid, sel: eid }); } }));
+      b.addEventListener('click', function () { openSheet({ kind: 'board', fid: f.id }); });
+      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSheet({ kind: 'board', fid: f.id }); } });
+      box.appendChild(b);
+    });
+  }
+
+  // Phone-only view: show what the TV would show.
+  var lastCard = null, lastCardN = 0;
+  function phoneOnly() {
+    var pref = store.get('phoneOnly');
+    if (pref === 'on') return true;
+    if (pref === 'off') return false;
+    return !state.tvCount;
+  }
+  function renderTable() {
+    var on = phoneOnly();
+    $('phone-only').checked = on;
+    $('table').hidden = !on;
+    if (state.event && state.event.kind === 'card' && state.event.cardInfo && state.event.n !== lastCardN) {
+      lastCardN = state.event.n;
+      lastCard = { info: state.event.cardInfo, by: state.event.by, target: state.event.target };
+    }
+    if (!on) return;
+    var rv = $('reveal');
+    rv.hidden = !lastCard;
+    if (lastCard) {
+      rv.textContent = '';
+      var by = fighter(lastCard.by), tg = lastCard.target ? fighter(lastCard.target) : null;
+      var top = el('div', 'top');
+      top.appendChild(el('span', '', 'Last card · ' + (by ? by.name : '?') + (tg ? ' on ' + tg.name : '')));
+      top.appendChild(el('span', '', lastCard.info.type + ' · ' + lastCard.info.cost + ' BP'));
+      rv.appendChild(top);
+      rv.appendChild(el('div', 'cn', lastCard.info.name));
+      rv.appendChild(el('div', '', lastCard.info.text));
+    }
+    var log = $('log');
+    log.textContent = '';
+    (state.log || []).slice(1, 7).forEach(function (t) { log.appendChild(el('li', '', t)); });
   }
 
   function renderAbilityList(box, mine, pickable) {
@@ -759,6 +894,24 @@ window.addEventListener('error', function (ev) {
     ok.disabled = false;
     var mine = fighter(me.fighterId);
 
+    if (s.kind === 'board' || s.kind === 'fx') {
+      var who = fighter(s.fid);
+      if (!who) { closeSheet(); return; }
+      ok.hidden = true;
+      $('sheet-text').textContent = '';
+      var wrap = el('div', 'ssr');
+      if (s.kind === 'board') {
+        $('sheet-title').textContent = who.name + ' · ' + hero(who.hero).name;
+        wrap.appendChild(SSR.board(state, who, { compact: true }));
+      } else {
+        $('sheet-title').textContent = who.name + "'s tokens";
+        wrap.appendChild(SSR.fxPanel(state, who, s.sel, function (id) { s.sel = id; refreshSheet(); }, closeSheet));
+      }
+      body.appendChild(wrap);
+      $('sheet-cancel').textContent = 'Close';
+      return;
+    }
+    $('sheet-cancel').textContent = 'Cancel';
     if (s.kind === 'attack') {
       if (!(state.step === 'roll' && state.activeId === mine.id)) { closeSheet(); return; }
       $('sheet-title').textContent = s.a.name;

@@ -93,6 +93,18 @@ const tierOf = (n) => (n >= 5 ? 2 : n === 4 ? 1 : n === 3 ? 0 : -1);
 const AANG_WILD = 6;
 const aangCount = (dice, faces) => count(dice, faces.concat([AANG_WILD]));
 const yes = (ok) => (ok ? 0 : -1);
+// Aang's 6s are wild: each can stand in for any number, straights included.
+const wildRun = (dice, len) => {
+  const sixes = count(dice, [6]);
+  const real = new Set(dice.filter((d) => d !== 6));
+  if (dice.length < len) return false;
+  for (let lo = 1; lo + len - 1 <= 6; lo++) {
+    let missing = 0;
+    for (let v = lo; v < lo + len; v++) if (!real.has(v)) missing++;
+    if (missing <= sixes) return true;
+  }
+  return false;
+};
 
 // Board spaces: 1-4 across the top row, 5-8 across the bottom row.
 // Every hero: four "ring" moves in spaces 1, 2, 5, 6 and three outer moves in 3, 4, 7.
@@ -113,7 +125,7 @@ const aang = {
     fire: { name: 'Fire', color: '#C8362A' },
     avatar: { name: 'Avatar', color: '#19B6C9' }
   },
-  wildNote: 'Avatar (6) is wild for the four element moves. Straights use the numbers only. Ring moves earn that element\'s Mastery.',
+  wildNote: 'Avatar (6) is wild: it can count as any number, straights included. Ring moves earn that element\'s Mastery, and Mastery can\'t be stolen.',
   abilities: [
     {
       id: 'whip', name: 'Water Whip', space: 1, ring: true, slot: 'Water', need: '3 Water (3, 3, 3)',
@@ -125,7 +137,7 @@ const aang = {
         const hits = count(r, [3]);
         const heals = count(r, [6]);
         return {
-          dmg: hits * 3, note: `rolls ${r.join(' ')}`,
+          dmg: hits * 3, note: `rolls ${r.join(' ')}: ${hits} × 3 = ${hits * 3} dmg${heals ? ', heal ' + heals * 2 : ''}`, extraDice: r,
           self: ({ att }) => { if (heals) fx.heal(att, heals * 2); fx.gain(att, 'masteryWater'); }
         };
       }
@@ -143,7 +155,7 @@ const aang = {
     {
       id: 'flash', name: 'Flash Freeze', space: 3, need: 'Small straight',
       text: ['5 dmg. Gain 1 Air Scooter token. Knockdown.', '7 dmg. Gain 1 Air Scooter token. Knockdown.'],
-      match: ({ dice }) => yes(smallStraight(dice)),
+      match: ({ dice }) => yes(wildRun(dice, 4)),
       plan: ({ lvl }) => ({
         dmg: lvl === 2 ? 7 : 5,
         hit: (ctx, t, notes) => fx.inflict(t, 'knockdown', notes),
@@ -152,7 +164,7 @@ const aang = {
     },
     {
       id: 'fists', name: 'Metal Fists', space: 4, need: '4 Avatar (6, 6, 6, 6)',
-      text: ['9 dmg. Draw 1 card. Gain 1 CP.', '11 dmg. Draw 1 card. Gain 1 CP.'],
+      text: ['9 dmg. Draw 1 card. Gain 1 BP.', '11 dmg. Draw 1 card. Gain 1 BP.'],
       match: ({ dice }) => yes(count(dice, [6]) >= 4),
       plan: ({ lvl }) => ({
         dmg: lvl === 2 ? 11 : 9,
@@ -184,7 +196,7 @@ const aang = {
     {
       id: 'combust', name: 'Combust', space: 7, need: 'Large straight',
       text: ['7 dmg. Burn.', '9 dmg. Burn twice.'],
-      match: ({ dice }) => yes(largeStraight(dice)),
+      match: ({ dice }) => yes(wildRun(dice, 5)),
       plan: ({ lvl }) => ({
         dmg: lvl === 2 ? 9 : 7,
         hit: (ctx, t, notes) => { fx.inflict(t, 'burn', notes); if (lvl === 2) fx.inflict(t, 'burn'); }
@@ -220,7 +232,7 @@ const aang = {
   cards: [
     { id: 'appa', name: 'Appa, Yip Yip!', cost: 2, type: 'main', text: 'Gain 1 Air Scooter token. Draw 1 card.',
       play: ({ me, draw }) => { fx.gain(me, 'airScooter'); draw(me, 1); } },
-    { id: 'momo', name: "Momo's Mischief", cost: 1, type: 'instant', text: 'Steal 1 CP from an opponent.',
+    { id: 'momo', name: "Momo's Mischief", cost: 1, type: 'instant', text: 'Steal 1 BP from an opponent.',
       pick: [{ k: 'target', label: 'Steal from who?' }],
       play: ({ me, target }) => { const n = Math.min(1, target.cp); fx.cp(target, -n); fx.cp(me, n); } },
     { id: 'team', name: 'Team Avatar', cost: 3, type: 'main', text: 'Earn one Mastery you are missing.',
@@ -241,7 +253,7 @@ const aang = {
 
 // ---------------- Link (same layout, tuned against Aang)
 const LT = {
-  slash: [6, 8], hookshot: [4, 5], hammer: [10, 12], bombs: [8, 9],
+  slash: [7, 9], hookshot: [4, 5], hammer: [10, 12], bombs: [8, 9],
   boomerang: [5, 6], spin: [7, 9], bow: [8, 9], ult: 15
 };
 const link = {
@@ -379,8 +391,8 @@ const link = {
 
 // ---------------- Onua (same layout, tuned against Aang)
 const OT = {
-  swipe: [5, 7], rockslide: [4, 5], rockMight: [1, 2], night: [5, 7], grip: [8, 10],
-  tunnel: [4, 6], mask: [3, 4], maskMight: [2, 3], quake: [8, 10], ult: 18
+  swipe: [5, 7], rockslide: [5, 6], rockMight: [1, 2], night: [6, 8], grip: [8, 10],
+  tunnel: [6, 8], mask: [3, 4], maskMight: [2, 3], quake: [8, 10], ult: 18
 };
 const onua = {
   id: 'onua',
@@ -459,7 +471,7 @@ const onua = {
   cards: [
     { id: 'surge', name: 'Pakari Surge', cost: 2, type: 'main', text: 'Gain 2 Might.',
       play: ({ me }) => fx.gain(me, 'might', 2) },
-    { id: 'miners', name: 'Onu-Matoran Miners', cost: 1, type: 'main', text: 'Draw 1 card. Gain 1 CP.',
+    { id: 'miners', name: 'Onu-Matoran Miners', cost: 1, type: 'main', text: 'Draw 1 card. Gain 1 BP.',
       play: ({ me, draw }) => { draw(me, 1); fx.cp(me, 1); } },
     { id: 'whenua', name: "Turaga Whenua's Counsel", cost: 1, type: 'main', text: 'Draw 1 card. Gain 1 Might.',
       play: ({ me, draw }) => { draw(me, 1); fx.gain(me, 'might', 1); } },
@@ -483,7 +495,7 @@ const HEROES = { aang, link, onua };
 // ------------------------------------------------------------------ shared deck (18 cards)
 
 const GENERIC = [
-  { id: 'pocket', n: 2, name: 'Pocket Change', cost: 0, type: 'main', text: 'Gain 2 CP.',
+  { id: 'pocket', n: 2, name: 'Pocket Change', cost: 0, type: 'main', text: 'Gain 2 BP.',
     play: ({ me }) => fx.cp(me, 2) },
   { id: 'wind', n: 2, name: 'Second Wind', cost: 1, type: 'main', text: 'Draw 2 cards.',
     play: ({ me, draw }) => draw(me, 2) },
@@ -527,8 +539,8 @@ const GENERIC = [
 ];
 
 // Hookshot: take the most valuable token. Fairy and Biggoron's Sword come with it.
-const STEAL_ORDER = ['avatarState', 'fairy', 'biggoron', 'burrowed', 'airScooter', 'might',
-  'masteryFire', 'masteryEarth', 'masteryWater', 'masteryAir'];
+// Mastery tokens are earned progress, so the Hookshot can't take them.
+const STEAL_ORDER = ['avatarState', 'fairy', 'biggoron', 'burrowed', 'airScooter', 'might'];
 function stealToken(att, t, notes) {
   const tok = STEAL_ORDER.find((k) => fx.has(t, k));
   if (!tok) { notes.push(`${t.name} had no token to take`); return; }
@@ -563,6 +575,13 @@ function deckFor(heroId) {
   return ids; // 18 + 8 + 7 = 33
 }
 
+// Dice chips shown on each board card (the dice you need).
+const CHIPS = {
+  aang: { whip: ['3', '3', '3'], scooter: ['1-2', '1-2', '1-2', '1-2'], flash: ['SM'], fists: ['6', '6', '6', '6'], avalanche: ['4', '4', '4'], dragon: ['5', '5', '5'], combust: ['LG'], energy: ['6', '6', '6', '6', '6'] },
+  link: { slash: ['2-3', '2-3', '2-3'], hookshot: ['1', '2-3', '2-3'], boomerang: ['SM'], spin: ['6', '6', '6', '6'], hammer: ['4-5', '4-5', '4-5', '4-5'], bombs: ['FH'], bow: ['LG'], triforce: ['6', '6', '6', '6', '6'] },
+  onua: { swipe: ['1-2', '1-2', '1-2'], rockslide: ['3-4', '3-4', '3-4'], tunnel: ['SM'], mask: ['6', '6', '6'], night: ['5', '5', '3-4', '3-4'], grip: ['1-2', '1-2', '1-2', '3-4', '3-4'], quake: ['LG'], nova: ['6', '6', '6', '6', '6'] }
+};
+
 const TOKEN_SLOTS = {
   aang: ['masteryWater', 'masteryAir', 'masteryEarth', 'masteryFire', 'airScooter', 'avatarState'],
   link: ['biggoron', 'fairy', 'hammerLock'],
@@ -578,9 +597,9 @@ function catalog() {
       art: '/smash/art/' + h.id + '-center.jpg',
       tokenSlots: TOKEN_SLOTS[h.id] || [],
       faces: h.faces, symbols: h.symbols, wildNote: h.wildNote || null,
-      abilities: h.abilities.map((a) => ({ id: a.id, name: a.name, art: '/smash/art/' + h.id + '-' + a.id + '.jpg', space: a.space, ring: !!a.ring, slot: a.slot || null, need: a.need, text: a.text, options: a.options || null, all: !!a.all })),
-      ultimate: { id: h.ultimate.id, name: h.ultimate.name, need: h.ultimate.need, text: h.ultimate.text, all: !!h.ultimate.all },
-      defense: { id: h.defense.id, name: h.defense.name, text: h.defense.text }
+      abilities: h.abilities.map((a) => ({ id: a.id, chips: (CHIPS[h.id] || {})[a.id] || [], name: a.name, art: '/smash/art/' + h.id + '-' + a.id + '.jpg', space: a.space, ring: !!a.ring, slot: a.slot || null, need: a.need, text: a.text, options: a.options || null, all: !!a.all })),
+      ultimate: { id: h.ultimate.id, chips: (CHIPS[h.id] || {})[h.ultimate.id] || [], name: h.ultimate.name, need: h.ultimate.need, text: h.ultimate.text, all: !!h.ultimate.all },
+      defense: { id: h.defense.id, dice: h.defense.dice, name: h.defense.name, text: h.defense.text }
     };
   }
   return out;

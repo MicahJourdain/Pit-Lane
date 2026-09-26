@@ -11,6 +11,8 @@ module.exports = function smash(app, io) {
   app.get('/smash/join/:code', page('smash.html'));
   app.get('/smash/tv', page('smash-tv.html'));
   app.get('/smash/tv/:code', page('smash-tv.html'));
+  app.get('/smash/ui.js', page('smash-ui.js'));   // shared board + HUD drawing
+  app.get('/smash/ui.css', page('smash-ui.css'));
   // Hero art: flat files like aang-whip.jpg next to this one. Only those names are served.
   app.get('/smash/art/:file', (req, res) => {
     const f = String(req.params.file || '');
@@ -63,7 +65,9 @@ module.exports = function smash(app, io) {
       socket.join(room.code);
       socket.data.code = room.code;
       socket.data.isTv = true;
+      (room.tvs = room.tvs || new Set()).add(socket.id);
       ack({ ok: true, code: room.code });
+      broadcast(room); // phones learn a TV is watching
       socket.emit('state', S.publicState(room));
     });
 
@@ -98,6 +102,7 @@ module.exports = function smash(app, io) {
     act('smash:play', (c, t, a) => S.play(c, t, Number(a.i), a.args || {}));
     act('smash:sell', (c, t, a) => S.sell(c, t, Number(a.i)));
     act('smash:end', (c, t) => S.endTurn(c, t));
+    act('smash:continue', (c, t) => S.continueBots(c, t));
 
     socket.on('player:leave', () => {
       const room = S.leave(socket.data.code, socket.data.token);
@@ -108,7 +113,11 @@ module.exports = function smash(app, io) {
     });
 
     socket.on('disconnect', () => {
-      if (socket.data.isTv) return;
+      if (socket.data.isTv) {
+        const tvRoom = S.get(socket.data.code);
+        if (tvRoom && tvRoom.tvs) { tvRoom.tvs.delete(socket.id); broadcast(tvRoom); }
+        return;
+      }
       const room = S.get(socket.data.code);
       const p = room && room.players.get(socket.data.token);
       if (p && p.socketId === socket.id) broadcast(S.markAway(room.code, socket.data.token));

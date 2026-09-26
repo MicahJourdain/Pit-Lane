@@ -41,7 +41,7 @@ S.toRoll(code, 't-micah', 1000);
 S.setRng(dice(4, 6, 6, 3, 1));
 S.roll(code, 't-micah', 1000);
 check('dice show', room.dice.values, [4, 6, 6, 3, 1]);
-check('Avatar is wild: 1 Earth + 2 Avatar = Rock Avalanche (and Water)', S.qualifying(room).map((q) => q.id).sort(), ['avalanche', 'whip']);
+check('Avatar is wild: wild 6s: Rock Avalanche, Water Whip, and both straights', S.qualifying(room).map((q) => q.id).sort(), ['avalanche', 'combust', 'flash', 'whip']);
 check('Air Scooter needs 4 Air', S.qualifying(room).some((q) => q.id === 'scooter'), false);
 const dawnF = fighterById(room, s.fighters[1].id);
 S.attack(code, 't-micah', { ability: 'avalanche' }, 1000);
@@ -124,7 +124,7 @@ while (b.phase === 'play' && guard++ < 5000) {
   if (!f.bot && b.step === 'main1') { while (f.hand.length > 6) S.sell(b.code, 't-solo', 0); S.endTurn(b.code, 't-solo', t); }
   else if (b.step === 'defend' && !fighterById(b, b.pending.defenderId).bot) {
     if (!b.dice.rolled) S.defRoll(b.code, 't-solo', t); else S.defAccept(b.code, 't-solo', t);
-  } else S.tick(b, t);
+  } else { if (S.needsContinue(b)) S.continueBots(b.code, 't-solo'); S.tick(b, t); }
 }
 check('a bot game reaches a winner', b.phase, 'finished');
 console.log('          (' + guard + ' steps, turn ' + b.turnNo + ')');
@@ -137,9 +137,69 @@ S.addBot(a.code, 't-a', 'aang');
 S.setRng(() => 0.01);
 S.start(a.code, 't-a', 0);
 S.markAway(a.code, 't-a');
-check('no skip before 15 s', S.tick(a, 10000), false);
-check('turn passes after 15 s', S.tick(a, 16000), true);
-check('bot is up', active(a).bot, true);
+check('an away phone keeps its turn (no timeouts)', [S.tick(a, 16000), active(a).bot], [false, false]);
+
+console.log('\nv0.3 fixes');
+{
+  const H2 = require('./smash-heroes');
+  const aangH = H2.HEROES.aang;
+  const q = (dice) => aangH.abilities.filter((a) => a.match({ dice, att: { tokens: {} }, room: { turnFlags: {} } }) >= 0).map((a) => a.id).sort();
+  check('6s fill a small straight (1 2 6 4 x)', q([1, 2, 6, 4, 1]).includes('flash'), true);
+  check('two 6s fill a large straight (1 6 3 6 5)', q([1, 6, 3, 6, 5]).includes('combust'), true);
+  check('6s count as Water for Water Whip (3 6 6 1 2)', q([3, 6, 6, 1, 2]).includes('whip'), true);
+  check('6s count as Air for Air Scooter (1 6 6 2 4)', q([1, 6, 6, 2, 4]).includes('scooter'), true);
+  const whip = aangH.abilities.find((a) => a.id === 'whip');
+  const seq = [3, 3, 6]; let i = 0;
+  const p = whip.plan({ lvl: 1, d6: () => seq[i++] });
+  check('Water Whip roll 3 3 6: 6 dmg', p.dmg, 6);
+  const me = { hp: 30, maxHp: 50, alive: true, tokens: {} };
+  p.self({ att: me });
+  check('...and the 6 heals 2', me.hp, 32);
+  const lnk = S.create('t-hk', 'A', 'x').room;
+  S.addBot(lnk.code, 't-hk', 'link');
+  const t = { name: 'Aang', tokens: { masteryFire: 1, masteryAir: 1 } };
+  const notes = [];
+  H2.HEROES.link.abilities.find((a) => a.id === 'hookshot').plan({ lvl: 1, opts: { mode: 'steal' } }).hit({ att: { name: 'Link', tokens: {} } }, t, notes);
+  check('Hookshot can no longer take Mastery', [t.tokens.masteryFire, t.tokens.masteryAir], [1, 1]);
+}
+{
+  const r = S.create('t-dice', 'D', 'x').room;
+  S.addBot(r.code, 't-dice', 'link');
+  S.setRng(() => 0.01);
+  S.start(r.code, 't-dice', 0);
+  S.toRoll(r.code, 't-dice', 0);
+  S.setRng(dice(1, 2, 3, 4, 5));
+  S.roll(r.code, 't-dice', 0);
+  check('rerolling with nothing tapped is refused', S.roll(r.code, 't-dice', 0).error, 'Tap the dice you want to reroll first.');
+  S.keep(r.code, 't-dice', 4);
+  S.setRng(dice(6));
+  S.roll(r.code, 't-dice', 0);
+  check('only the tapped die rerolls', r.dice.values, [1, 2, 3, 4, 6]);
+  check('a person is never timed out', S.tick(r, 10 * 60 * 1000), false);
+  S.skipAttack(r.code, 't-dice', 0);
+  S.endTurn(r.code, 't-dice', 0);
+  let guard = 0;
+  while (!S.needsContinue(r) && guard++ < 50) S.tick(r, 1e7 + guard * 5000);
+  check('after a bot finishes its move, the game waits for Continue', S.needsContinue(r), true);
+  check('bots do nothing while waiting', S.tick(r, 9e9), false);
+  S.continueBots(r.code, 't-dice');
+  check('Continue lets the game move on', S.needsContinue(r), false);
+}
+{
+  const r = S.create('t-res', 'R', 'x').room;
+  S.pickHero(r.code, 't-res', 'aang');
+  S.addBot(r.code, 't-res', 'link');
+  S.setRng(() => 0.01);
+  S.start(r.code, 't-res', 0);
+  S.toRoll(r.code, 't-res', 0);
+  S.setRng(dice(4, 4, 4, 1, 2));
+  S.roll(r.code, 't-res', 0);
+  S.attack(r.code, 't-res', { ability: 'avalanche' }, 0);
+  S.setRng(dice(4, 5, 6, 1)); // Link blocks 2+2+1 = 5
+  S.tick(r, 1e6); S.tick(r, 2e6);
+  const res = S.publicState(r).result;
+  check('hit result: 8 raw, Hylian Shield blocked 5, 3 taken', [res.raw, res.hits[0].blocks, res.hits[0].taken], [8, [['Hylian Shield', 5]], 3]);
+}
 
 console.log('\nPick your own code');
 check('host picks NAIL', S.create('t-n', 'N', 'x', 'nail').room.code, 'NAIL');

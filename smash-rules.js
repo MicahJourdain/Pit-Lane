@@ -345,7 +345,10 @@ function doRoll(room, f, now) {
   const d = room.dice;
   if (room.step !== 'roll' || !d || d.done) return { error: 'You are not rolling right now.' };
   if (d.rollsLeft <= 0) return { error: 'No rolls left. Pick an attack or pass.' };
+  // First roll: all dice. After that: only the dice the player tapped (kept = false).
+  if (d.rolled && d.kept.every(Boolean)) return { error: 'Tap the dice you want to reroll first.' };
   d.values = d.values.map((v, i) => (d.kept[i] && d.rolled ? v : d6()));
+  d.kept = d.values.map(() => true);
   d.rollsLeft--;
   d.rolled++;
   room.stepAt = now;
@@ -484,37 +487,52 @@ function skipAttack(code, token, now = Date.now()) {
 function landHit(room, att, t, plan, defRes, notes) {
   let dmg = plan.dmg;
   let prevented = 0;
+  const blocks = []; // what cut the damage, in order: [label, amount]
+  const cut = (label, n) => { if (n > 0) { blocks.push([label, n]); dmg -= n; } };
   if (!plan.pure) {
-    if (defRes && defRes.dodge) dmg = 0;
-    if (defRes && defRes.prevent) { prevented = Math.min(dmg, defRes.prevent); dmg -= prevented; }
+    if (defRes && defRes.dodge) cut('Dodged', dmg);
+    if (defRes && defRes.prevent) { prevented = Math.min(dmg, defRes.prevent); cut(HEROES[t.hero].defense.name, prevented); }
     if (fx.has(t, 'airScooter') && dmg > 0) {
       t.tokens.airScooter -= 1; if (!t.tokens.airScooter) delete t.tokens.airScooter;
-      dmg = Math.max(0, dmg - 2); notes.push(`${t.name}'s Air Scooter blocks 2`);
+      cut('Air Scooter token', Math.min(2, dmg));
     }
-    if (fx.has(t, 'avatarState') && dmg > 0) dmg = Math.max(0, dmg - 2);
-    if (t.shield && dmg > 0) { const s = Math.min(t.shield, dmg); t.shield -= s; dmg -= s; }
-    if (fx.has(t, 'burrowed')) { fx.drop(t, 'burrowed'); dmg = Math.floor(dmg / 2); notes.push(`${t.name} was Burrowed and takes half`); }
+    if (fx.has(t, 'avatarState') && dmg > 0) cut('Avatar State', Math.min(2, dmg));
+    if (t.shield && dmg > 0) { const s = Math.min(t.shield, dmg); t.shield -= s; cut('Shield card', s); }
+    if (fx.has(t, 'burrowed')) { fx.drop(t, 'burrowed'); cut('Burrowed (half)', dmg - Math.floor(dmg / 2)); }
   }
+  const hpBefore = t.hp;
   fx.hurt(t, dmg, notes);
   t.lastDamage = dmg;
-  notes.push(`${t.name} takes ${dmg}`);
+  const blocked = blocks.reduce((a, b) => a + b[1], 0);
+  notes.push(`${t.name} takes ${dmg}` + (blocked ? ` (${plan.dmg} − ${blocked} blocked)` : ''));
+  const rec = { targetId: t.id, raw: plan.dmg, blocks, taken: dmg, heal: 0, back: 0, hpBefore, hpAfter: 0, pure: !!plan.pure, gains: [] };
+  (room.hitLog = room.hitLog || []).push(rec);
   if (dmg >= 10 && fx.has(t, 'avatarState')) { fx.drop(t, 'avatarState'); notes.push(`${t.name} is knocked out of the Avatar State`); }
 
   if (defRes) {
-    if (defRes.heal) { fx.heal(t, defRes.heal); notes.push(`${t.name} heals ${defRes.heal}`); }
-    (defRes.gain || []).forEach((g) => { fx.gain(t, g); notes.push(`${t.name} gains ${H.TOKENS[g].name}`); });
+    if (defRes.heal) { const before = t.hp; fx.heal(t, defRes.heal); rec.heal = t.hp - before; notes.push(`${t.name} heals ${defRes.heal}`); }
+    (defRes.gain || []).forEach((g) => { fx.gain(t, g); rec.gains.push(H.TOKENS[g].name); notes.push(`${t.name} gains ${H.TOKENS[g].name}`); });
   }
   let back = (defRes && defRes.reflect) || 0;
   if (defRes && defRes.mirror) back += Math.floor(prevented / 2);
   if (t.thorns && !plan.pure) { back += t.thorns; t.thorns = 0; }
-  if (back > 0 && t.alive) { fx.hurt(att, back, notes); notes.push(`${att.name} takes ${back} back`); }
+  if (back > 0 && t.alive) { fx.hurt(att, back, notes); rec.back = back; notes.push(`${att.name} takes ${back} back`); }
 
   if (plan.hit) plan.hit({ room, att, draw }, t, notes);
+  rec.hpAfter = Math.max(0, t.hp);
 }
 
 function finishAttack(room, f, plan, notes, label, now) {
+  const hpBefore = f.hp;
   if (plan.self) plan.self({ room, att: f, draw }, notes);
   setEvent(room, label + '. ' + notes.join('. ') + '.', { kind: 'hit', by: f.id, abilityName: plan.name });
+  // A clear result card for the TV and phones.
+  room.result = {
+    n: room.event.n, attackerId: f.id, ability: plan.name, raw: plan.dmg,
+    bonus: plan.bonus || 0, might: plan.might || 0, extraDice: plan.extraDice || null,
+    selfChange: f.hp - hpBefore, hits: room.hitLog || []
+  };
+  room.hitLog = [];
   room.pending = null;
   room.stepAt = now;
   if (checkDeaths(room)) return;
@@ -573,7 +591,7 @@ function sell(code, token, idx) {
   const [card] = f.hand.splice(idx, 1);
   f.discard.push(card);
   fx.cp(f, 1);
-  setEvent(room, `${f.name} sells ${CARDS[card].name} for 1 CP.`, { kind: 'sell' });
+  setEvent(room, `${f.name} sells ${CARDS[card].name} for 1 BP.`, { kind: 'sell' });
   return { room };
 }
 
@@ -599,7 +617,7 @@ function whyNot(room, f, cardId) {
   const c = CARDS[cardId];
   if (!c) return 'Unknown card.';
   if (room.phase !== 'play' || !f.alive) return 'The fight is not on.';
-  if (f.cp < c.cost) return `Needs ${c.cost} CP.`;
+  if (f.cp < c.cost) return `Needs ${c.cost} BP.`;
   const mine = active(room) === f;
   const d = room.dice;
   if (c.type === 'main' || c.type === 'upgrade') {
@@ -705,31 +723,48 @@ function botChoose(room, f) {
   return best;
 }
 
-// Called on a timer. Plays bot turns, and turns for phones that have gone quiet.
+// After a bot's attack lands (or it passes), bots wait until a person taps Continue.
+const PAUSE_KINDS = ['hit', 'pass'];
+function botInvolved(room) {
+  const f = active(room);
+  if (!f) return false;
+  if (f.bot) return true;
+  return room.step === 'defend' && room.pending && fighterById(room, room.pending.defenderId).bot;
+}
+function needsContinue(room) {
+  if (room.phase !== 'play' || !room.event || !PAUSE_KINDS.includes(room.event.kind)) return false;
+  if (room.ackN === room.event.n) return false;
+  const by = fighterById(room, room.event.by);
+  const next = active(room);
+  // Pause only when a bot is about to act next, or a bot just made the move.
+  return !!((by && by.bot) || (next && next.bot));
+}
+function continueBots(code, token) {
+  const room = get(code);
+  if (!room) return { error: 'No game with that code.' };
+  if (!room.players.has(token)) return { error: 'Join the game first.' };
+  if (room.event) room.ackN = room.event.n;
+  room.stepAt = 0;
+  return { room };
+}
+
+// Called on a timer. Plays bot turns (people are never timed out).
 function tick(room, now = Date.now()) {
   if (room.phase !== 'play') return false;
   if (now - room.stepAt < BOT_STEP_MS) return false;
   const f = active(room);
 
+  if (needsContinue(room)) return false; // a person taps Continue first
+
   if (room.step === 'defend') {
     const t = fighterById(room, room.pending.defenderId);
-    const auto = t.bot || (!isConnected(room, t) && now - room.stepAt > AWAY_MS) || now - room.stepAt > DEFEND_IDLE_MS;
-    if (!auto) return false;
+    if (!t.bot) return false; // people are never rolled for
     if (!room.dice.rolled) doDefRoll(room, t, now);
     else doDefAccept(room, t, now);
     return true;
   }
 
-  const quiet = !f.bot && !isConnected(room, f) && now - room.stepAt > AWAY_MS;
-  if (!f.bot && !quiet) return false;
-
-  if (quiet && !f.bot) {
-    if (room.step === 'roll') { room.dice.done = true; room.step = 'main2'; }
-    while (f.hand.length > HAND_LIMIT) { f.discard.push(f.hand.pop()); fx.cp(f, 1); }
-    setEvent(room, `${f.name}'s phone is away, so their turn was passed.`, { kind: 'skip' });
-    doEndTurn(room, f, now);
-    return true;
-  }
+  if (!f.bot) return false; // no timeouts: people take as long as they like
 
   // Bot
   if (room.step === 'main1') {
@@ -746,8 +781,7 @@ function tick(room, now = Date.now()) {
     const choice = botChoose(room, f);
     if (d.rollsLeft > 0 && !(choice && (choice.score >= 100 || choice.score >= 8))) {
       botKeep(room, f, d);
-      doRoll(room, f, now);
-      return true;
+      if (!doRoll(room, f, now).error) return true;
     }
     if (choice) {
       const opp = opponents(room, f).sort((a, b) => a.hp - b.hp);
@@ -807,6 +841,9 @@ function publicState(room) {
       ability: room.pending.plan.name, dmg: room.pending.plan.dmg, dodge: room.pending.dodge
     } : null,
     winnerId: room.winnerId,
+    waiting: needsContinue(room),
+    tvCount: room.tvs ? room.tvs.size : 0,
+    result: room.result || null,
     event: room.event,
     log: room.log
   };
@@ -836,6 +873,6 @@ module.exports = {
   rooms, get, create, join, leave, markAway, sweep, cleanName, normalizeCode,
   pickHero, addBot, removeBot, start, rematch,
   toRoll, roll, keep, attack, skipAttack, defRoll, defAccept, sell, endTurn, play,
-  qualifying, tick, publicState, privateState, setRng,
+  qualifying, tick, publicState, privateState, setRng, continueBots, needsContinue,
   _internal: { active, fighterById, fighterOf, draw }
 };

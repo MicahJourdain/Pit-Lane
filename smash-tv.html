@@ -6,7 +6,8 @@
 <title>Super Smash Rolls · TV</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/smash/ui.css">
 <style>
   :root {
     color-scheme: light;
@@ -52,7 +53,12 @@
   .slot.open .hn { color: var(--muted); font-family: var(--label); font-weight: 600; font-size: 1.3em; }
 
   /* game: the hero playmat */
-  .game { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1vw; padding: 1vw 1.2vw 1.2vw; background: #172029; color: #F6EAD2; min-height: 0; }
+  .game { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1vw; padding: 1vw 1.2vw 1.2vw; background: #16122b; color: #f4efe6; min-height: 0; }
+  .game .strip { display: grid; gap: 1.2vw; font-size: .82vw; }
+  .hudbtn { background: #1c1736; border: .15vw solid #2b2450; border-radius: .6vw; padding: .5vw .7vw .6vw; cursor: pointer; text-align: left; font: inherit; color: inherit; position: relative; min-width: 0; }
+  .hudbtn.focus { border-color: #3ee6e0; }
+  .hudbtn .pin { position: absolute; top: -.7vw; right: .8vw; font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .12em; padding: .05vw .6vw; border-radius: 999px; background: #3ee6e0; color: #16122b; }
+  .game .matwrap { font-size: .95vw; min-height: 0; height: 100%; }
   .strip { display: flex; gap: .8vw; }
   .ftr { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr auto; gap: .1vw .7vw; align-items: center; padding: .5vw .8vw; background: #222E3A; border: .2vw solid #3A4A5A; border-radius: .9vw; color: #F6EAD2; font: inherit; text-align: left; cursor: pointer; position: relative; }
   .ftr img { width: 3.2vw; height: 3.2vw; border-radius: 50%; object-fit: cover; object-position: center 25%; border: .2vw solid #E3C98F; grid-row: span 2; }
@@ -102,7 +108,7 @@
   .ult.q { box-shadow: 0 0 0 .3vw #F2C230, 0 0 1.4vw .2vw rgba(242,194,48,.55); }
   .ult.use { box-shadow: 0 0 0 .35vw #E0604F, 0 0 1.8vw .4vw rgba(224,96,79,.7); }
   .sidebar { display: flex; flex-direction: column; gap: .8vw; min-height: 0; }
-  .spanel { background: #222E3A; border: .18vw solid #3A4A5A; border-radius: 1vw; padding: .8vw; }
+  .spanel { background: #221c3d; border: .18vw solid #3a3163; border-radius: 1vw; padding: .8vw; }
   .spanel .lbl { font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .18em; text-transform: uppercase; color: #B9C2CC; margin-bottom: .4vw; }
   .who { font-family: var(--display); font-size: 1.5vw; line-height: 1.05; }
   .who small { display: block; font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .12em; text-transform: uppercase; color: #F2C230; margin-top: .25vw; }
@@ -113,9 +119,9 @@
   .die.kept { box-shadow: 0 0 0 .3vw #19B6C9, .25vw .25vw 0 #0B0F14; transform: translateY(-.4vw); }
   .die.rolling { animation: tumble .6s ease; }
   @keyframes tumble { 0% { transform: rotate(0) scale(1); } 30% { transform: rotate(-20deg) scale(1.1); } 60% { transform: rotate(16deg) scale(.95); } 100% { transform: rotate(0) scale(1); } }
-  .event { font-size: 1vw; line-height: 1.3; font-weight: 600; border-left: .4vw solid #19B6C9; padding: .5vw .7vw; background: #1A242E; border-radius: 0 .6vw .6vw 0; }
+  .event { font-size: 1vw; line-height: 1.3; font-weight: 600; border-left: .4vw solid #3ee6e0; padding: .5vw .7vw; background: #1c1736; border-radius: 0 .6vw .6vw 0; }
   .event.fresh { animation: flash 1.2s ease; }
-  @keyframes flash { from { background: #4A4020; } to { background: #1A242E; } }
+  @keyframes flash { from { background: #4A4020; } to { background: #1c1736; } }
   .reveal { background: #F6EAD2; color: #1E1B2E; border: .22vw solid #E3C98F; border-radius: .9vw; padding: .7vw .8vw; box-shadow: 0 0 0 .15vw #0B0F14; }
   .reveal.fresh { animation: pop .5s ease; }
   @keyframes pop { 0% { transform: scale(.7) rotate(-4deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
@@ -123,6 +129,24 @@
   .reveal .cn { font-family: var(--display); font-size: 1.4vw; line-height: 1.05; margin: .2vw 0; }
   .reveal .ct { font-size: .95vw; line-height: 1.25; }
   .log { list-style: none; margin: 0; padding: 0; font-size: .8vw; color: #B9C2CC; overflow: hidden; }
+  .die { position: relative; }
+  .die.pick { box-shadow: 0 0 0 .3vw #E0604F, .25vw .25vw 0 #0B0F14; opacity: .85; }
+  .die .rr { position: absolute; bottom: -.6vw; left: 50%; transform: translateX(-50%); background: #E0604F; color: #fff; font-family: var(--label); font-weight: 700; font-size: .55vw; letter-spacing: .08em; padding: .05vw .35vw; border-radius: .3vw; }
+  .waitbar { background: #19B6C9; color: #0B0F14; font-family: var(--display); font-size: 1.4vw; text-align: center; padding: .5vw; border-radius: .8vw; letter-spacing: .04em; animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .65; } }
+  .resultbox { background: #F6EAD2; color: #1E1B2E; border: .22vw solid #E0604F; border-radius: .9vw; padding: .6vw .8vw; }
+  .resultbox.fresh { animation: pop .5s ease; }
+  .resultbox .lbl { font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .16em; text-transform: uppercase; color: #8E2A1F; }
+  .resultbox .rh { font-family: var(--display); font-size: 1.3vw; line-height: 1.05; margin: .15vw 0 .3vw; }
+  .resultbox table { width: 100%; border-collapse: collapse; font-size: .95vw; font-weight: 600; }
+  .resultbox td { padding: .12vw 0; }
+  .resultbox td.n { text-align: right; font-family: var(--display); font-size: 1.1vw; }
+  .resultbox tr.blk td { color: #2F6B3A; }
+  .resultbox tr.tot td { border-top: .12vw solid #1E1B2E; }
+  .resultbox tr.tot td.n { color: #C8362A; font-size: 1.8vw; }
+  .resultbox tr.hp td { color: #5E5870; font-size: .85vw; }
+  .resultbox .xd { display: flex; gap: .3vw; margin-bottom: .3vw; }
+  .die.sm { width: 2vw; height: 2.2vw; font-size: 1vw; border-radius: .4vw; box-shadow: .15vw .15vw 0 #0B0F14; }
   .log li { padding: .35vw 0; border-bottom: .1vw solid #3A4A5A; line-height: 1.3; }
   .code-small { font-family: var(--display); font-size: 1.3vw; letter-spacing: .12em; }
   .done { flex: 1; display: grid; place-items: center; text-align: center; padding: 30px; }
@@ -172,16 +196,18 @@
   </div>
 </main>
 
-<main id="game" class="game" hidden>
+<main id="game" class="game ssr" hidden>
   <div class="strip" id="strip"></div>
   <div class="main">
-    <div class="mat" id="mat"></div>
+    <div class="matwrap" id="mat"></div>
     <aside class="sidebar">
       <div class="spanel">
         <div class="who" id="who">—</div>
         <div class="dice" id="dice"></div>
       </div>
       <div class="event" id="event">Fight!</div>
+      <div class="waitbar" id="waitbar" hidden>Tap CONTINUE on a phone</div>
+      <div class="resultbox" id="result" hidden></div>
       <div class="reveal" id="reveal" hidden></div>
       <div class="spanel" style="flex: 1; min-height: 0; overflow: hidden;">
         <div class="lbl">What happened</div>
@@ -206,6 +232,7 @@
 <div class="net" id="net" hidden>Reconnecting</div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="/smash/ui.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function () {
@@ -318,7 +345,45 @@
   };
   var MAT_BG = { aang: ['#1D2B3B', '#3A2419'], link: ['#1C2A20', '#2A2240'], onua: ['#1E2A2E', '#33291E'] };
   var SPACE_CELL = { 1: [1, 1], 2: [2, 1], 3: [4, 1], 4: [5, 1], 5: [1, 2], 6: [2, 2], 7: [4, 2], 8: [5, 2] };
-  var pinned = null, lastCard = null, lastCardN = 0;
+  var pinned = null, lastCard = null, lastCardN = 0, lastVals = null, lastResultN = 0;
+
+  // The last attack, spelled out on the TV.
+  function renderResult(s) {
+    var r = s.result;
+    var box = $('result');
+    box.hidden = !r;
+    if (!r) return;
+    box.textContent = '';
+    var att = fighter(s, r.attackerId);
+    box.appendChild(el('div', 'lbl', 'Attack result'));
+    box.appendChild(el('div', 'rh', att.name + ': ' + r.ability));
+    if (r.extraDice) {
+      var xd = el('div', 'xd');
+      var ah = s.heroes[att.hero];
+      r.extraDice.forEach(function (v) {
+        var sym = ah.symbols[ah.faces[v]];
+        var dd = el('div', 'die sm'); dd.style.background = sym.color; dd.style.color = textOn(sym.color);
+        dd.appendChild(document.createTextNode(v)); xd.appendChild(dd);
+      });
+      box.appendChild(xd);
+    }
+    r.hits.forEach(function (h) {
+      var t = fighter(s, h.targetId);
+      var tbl = el('table');
+      function row(label, n, cls) { var tr = el('tr', cls || ''); tr.appendChild(el('td', '', label)); tr.appendChild(el('td', 'n', n)); tbl.appendChild(tr); }
+      var extra = [];
+      if (r.bonus) extra.push('+' + r.bonus + ' bonus');
+      if (r.might) extra.push('+' + (r.might * 2) + ' Might');
+      row('Attack' + (extra.length ? ' (' + extra.join(', ') + ')' : '') + (h.pure ? ' · unblockable' : ''), h.raw);
+      h.blocks.forEach(function (b) { row('Blocked: ' + b[0], '−' + b[1], 'blk'); });
+      row(t.name + ' takes', h.taken, 'tot');
+      if (h.heal) row(t.name + ' heals', '+' + h.heal);
+      if (h.back) row(att.name + ' takes back', h.back);
+      row(t.name + "'s health", h.hpBefore + ' → ' + h.hpAfter, 'hp');
+      box.appendChild(tbl);
+    });
+    if (r.n !== lastResultN) { lastResultN = r.n; box.classList.remove('fresh'); void box.offsetWidth; box.classList.add('fresh'); }
+  }
 
   function lvl(f, id) { return (f.upgrades && f.upgrades[id]) || 1; }
   function usedName(s, f) {
@@ -385,7 +450,7 @@
     left.appendChild(el('div', 'hn', h.name));
     left.appendChild(el('div', 'pn', f.name + ' · ' + h.title + (f.bot ? ' · bot' : '')));
     var hp = el('div', 'hpbig', f.alive ? f.hp + '/' + f.maxHp : 'KO');
-    hp.appendChild(el('small', '', f.cp + ' CP · ' + f.cards + ' cards in hand'));
+    hp.appendChild(el('small', '', f.cp + ' BP · ' + f.cards + ' cards in hand'));
     np.appendChild(left); np.appendChild(hp);
     por.appendChild(np);
     center.appendChild(por);
@@ -439,29 +504,21 @@
 
     var strip = $('strip');
     strip.textContent = '';
-    s.fighters.forEach(function (x) {
-      var h = s.heroes[x.hero];
-      var b = el('button', 'ftr' + (!x.alive ? ' out' : x.id === defId ? ' def' : x.id === s.activeId ? ' now' : '') + (x.id === f.id ? ' focus' : ''));
+    strip.style.gridTemplateColumns = 'repeat(' + s.fighters.length + ', minmax(0, 1fr))';
+    s.fighters.forEach(function (x, i) {
+      var b = el('button', 'hudbtn' + (x.id === f.id ? ' focus' : ''));
+      b.type = 'button';
       b.setAttribute('aria-pressed', pinned === x.id ? 'true' : 'false');
       b.setAttribute('aria-label', (pinned === x.id ? 'Unpin ' : 'Show ') + x.name + "'s board on this TV");
-      var img = el('img'); img.src = h.art; img.alt = ''; b.appendChild(img);
-      b.appendChild(el('div', 'nm', x.name));
-      var hp = el('div', 'hp', x.alive ? x.hp : 'KO');
-      hp.appendChild(el('small', '', x.cp + ' CP · ' + x.cards + ' cards'));
-      b.appendChild(hp);
-      b.appendChild(el('div', 'sub', h.name + (x.bot ? ' · bot' : '') + (x.connected ? '' : ' · away')));
-      var bar = el('div', 'bar'); var i = el('i');
-      i.style.width = Math.max(0, Math.round(100 * x.hp / x.maxHp)) + '%';
-      i.style.background = h.accent;
-      bar.appendChild(i); b.appendChild(bar);
-      if (x.alive && x.id === defId) b.appendChild(el('span', 'tag def', 'DEFENDING'));
-      else if (x.alive && x.id === s.activeId) b.appendChild(el('span', 'tag', 'TURN'));
-      if (pinned === x.id) b.appendChild(el('span', 'tag pin', 'PINNED'));
+      b.appendChild(SSR.hud(s, x, { playerNo: i + 1 }));
+      if (pinned === x.id) b.appendChild(el('span', 'pin', 'PINNED'));
       b.addEventListener('click', function () { pinned = pinned === x.id ? null : x.id; renderGame(S); });
       strip.appendChild(b);
     });
 
-    renderMat(s, f, defId);
+    var mat = $('mat');
+    mat.textContent = '';
+    mat.appendChild(SSR.board(s, f));
 
     // Sidebar: whose move, dice, event, played card, log
     var act = fighter(s, s.activeId);
@@ -493,13 +550,16 @@
           die.style.color = textOn(sym.color);
           die.appendChild(document.createTextNode(v));
           die.appendChild(el('small', '', sym.name));
-          if (d.kind === 'offense' && d.kept[idx] && !d.done) die.className += ' kept';
-          if (fresh && d.rolled && !(d.kept[idx] && d.kind === 'offense')) die.className += ' rolling';
+          if (d.kind === 'offense' && d.rolled && !d.done && !d.kept[idx]) { die.className += ' pick'; die.appendChild(el('span', 'rr', 'REROLL')); }
+          if (fresh && d.rolled && (!lastVals || lastVals[idx] !== v || d.rolled === 1)) die.className += ' rolling';
         }
         dice.appendChild(die);
       });
+      if (fresh) lastVals = d.values.slice();
       lastRoll = d.owner + ':' + d.kind + ':' + d.rolled;
     }
+    $('waitbar').hidden = !s.waiting;
+    renderResult(s);
     var ev = $('event');
     if (s.event) {
       ev.textContent = s.event.text;
@@ -521,7 +581,7 @@
       var tg = lastCard.target ? fighter(s, lastCard.target) : null;
       var top = el('div', 'top');
       top.appendChild(el('span', '', 'Played by ' + (by ? by.name : '?') + (tg ? ' on ' + tg.name : '')));
-      top.appendChild(el('span', '', lastCard.info.type + ' · ' + lastCard.info.cost + ' CP'));
+      top.appendChild(el('span', '', lastCard.info.type + ' · ' + lastCard.info.cost + ' BP'));
       rv.appendChild(top);
       rv.appendChild(el('div', 'cn', lastCard.info.name));
       rv.appendChild(el('div', 'ct', lastCard.info.text));
