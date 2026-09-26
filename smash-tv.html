@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Super Smash Rolls · TV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #F4ECDD;
+    --card: #FFFFFF;
+    --ink: #1E1B2E;
+    --muted: #5E5870;
+    --soft: #EADFCB;
+    --teal: #19B6C9;
+    --gold: #E0A526;
+    --red: #C8362A;
+    --display: 'Anton', 'Impact', sans-serif;
+    --label: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body: 'Barlow', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); }
+  body { font-family: var(--body); font-size: clamp(16px, 1.45vw, 26px); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+  .stripe { flex: none; height: 12px; background: linear-gradient(90deg, #F2B544 0 25%, #2A7FD4 25% 50%, #2F8A43 50% 75%, #C8362A 75%); }
+  .eyebrow { font-family: var(--label); font-weight: 700; font-size: .85em; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5em; }
+  .center { flex: 1; display: grid; place-items: center; padding: 40px 20px; text-align: center; }
+  .title { font-family: var(--display); font-size: clamp(48px, 6vw, 110px); line-height: .95; margin: 0 0 .3em; }
+  .code-input { font-family: var(--display); font-size: clamp(64px, 9vw, 120px); letter-spacing: .16em; text-indent: .16em; width: 5.5ch; background: transparent; border: none; border-bottom: 6px solid var(--ink); color: var(--ink); text-align: center; text-transform: uppercase; outline: none; }
+  .hint { color: var(--muted); margin-top: 1em; max-width: 36ch; margin-inline: auto; }
+  .err { color: var(--red); font-weight: 600; min-height: 1.4em; margin-top: .8em; }
+  .panel { background: var(--card); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 8px 8px 0 var(--ink); }
+
+  /* lobby */
+  .lobby { flex: 1; display: grid; grid-template-columns: minmax(300px, 30%) 1fr; gap: clamp(24px, 3vw, 60px); padding: clamp(20px, 3vw, 56px); align-items: start; }
+  .codecard { padding: .8em 1em 1em; text-align: center; }
+  .codecard .code { font-family: var(--display); font-size: clamp(90px, 9vw, 160px); line-height: 1; letter-spacing: .08em; text-indent: .08em; }
+  .join { margin-top: 1.2em; display: flex; gap: 1em; align-items: center; }
+  #qr { flex: none; width: clamp(120px, 10vw, 170px); aspect-ratio: 1; background: #fff; border: 4px solid var(--ink); border-radius: 12px; padding: 8px; }
+  #qr img, #qr canvas { width: 100% !important; height: 100% !important; display: block; }
+  .join-text { color: var(--muted); line-height: 1.4; font-size: .9em; }
+  .join-text b { color: var(--ink); word-break: break-all; }
+  .slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 1.6vw, 28px); }
+  .slot { display: flex; align-items: center; gap: 1em; padding: 1em; min-height: 6.5em; }
+  .slot.open { background: transparent; border-style: dashed; box-shadow: none; }
+  .mono { flex: none; width: 3.4em; height: 3.4em; border-radius: 50%; border: 4px solid var(--ink); display: grid; place-items: center; font-family: var(--display); font-size: 1.4em; }
+  .slot .hn { font-family: var(--display); font-size: 1.8em; line-height: 1; }
+  .slot .pn { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .slot.open .hn { color: var(--muted); font-family: var(--label); font-weight: 600; font-size: 1.3em; }
+
+  /* game: the hero playmat */
+  .game { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1vw; padding: 1vw 1.2vw 1.2vw; background: #172029; color: #F6EAD2; min-height: 0; }
+  .strip { display: flex; gap: .8vw; }
+  .ftr { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr auto; gap: .1vw .7vw; align-items: center; padding: .5vw .8vw; background: #222E3A; border: .2vw solid #3A4A5A; border-radius: .9vw; color: #F6EAD2; font: inherit; text-align: left; cursor: pointer; position: relative; }
+  .ftr img { width: 3.2vw; height: 3.2vw; border-radius: 50%; object-fit: cover; object-position: center 25%; border: .2vw solid #E3C98F; grid-row: span 2; }
+  .ftr .nm { font-family: var(--display); font-size: 1.35vw; line-height: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .ftr .sub { font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .1em; text-transform: uppercase; color: #B9C2CC; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .ftr .hp { font-family: var(--display); font-size: 2.1vw; line-height: 1; grid-row: span 2; text-align: right; }
+  .ftr .hp small { display: block; font-family: var(--label); font-size: .6vw; font-weight: 700; color: #F2C230; letter-spacing: .08em; }
+  .ftr .bar { grid-column: 1 / -1; height: .45vw; background: #0E141A; border-radius: .3vw; overflow: hidden; margin-top: .2vw; }
+  .ftr .bar i { display: block; height: 100%; }
+  .ftr.now { border-color: #F2C230; box-shadow: 0 0 0 .2vw #F2C230; }
+  .ftr.def { border-color: #E0604F; box-shadow: 0 0 0 .2vw #E0604F; }
+  .ftr.focus { background: #2F3F50; }
+  .ftr.out { opacity: .4; }
+  .ftr .tag { position: absolute; top: -.7vw; right: .8vw; font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .12em; padding: .05vw .6vw; border-radius: 999px; background: #F2C230; color: #1E1B2E; }
+  .ftr .tag.def { background: #E0604F; color: #fff; }
+  .ftr .tag.pin { left: .8vw; right: auto; background: #19B6C9; }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 25vw; gap: 1vw; min-height: 0; }
+  .mat { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.9fr) repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: .8vw; padding: .9vw; border-radius: 1.2vw; border: .25vw solid #0B0F14; background: #1D2B3B; min-height: 0; overflow: hidden; }
+  .mat .half { position: absolute; top: 0; right: 0; bottom: 0; width: 50%; background: #3A2419; }
+  .card { position: relative; display: flex; flex-direction: column; min-height: 0; border: .22vw solid #E3C98F; border-radius: .8vw; box-shadow: 0 0 0 .15vw #0B0F14, .3vw .4vw 0 .15vw rgba(0,0,0,.45); overflow: hidden; background: #24394F; transition: transform .25s ease, box-shadow .25s ease; }
+  .card .sp { position: absolute; top: .45vw; left: .45vw; width: 1.4vw; height: 1.4vw; border-radius: 50%; background: #1E1B2E; color: #E3C98F; border: .12vw solid #E3C98F; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: .75vw; }
+  .card .lv { position: absolute; top: .45vw; right: .45vw; padding: 0 .45vw; border-radius: .4vw; background: #19B6C9; color: #1E1B2E; font-family: var(--display); font-size: .8vw; }
+  .card .body { padding: .6vw .55vw .5vw; display: flex; flex-direction: column; align-items: center; gap: .35vw; text-align: center; }
+  .card .t { font-family: var(--display); font-size: 1.15vw; line-height: 1; margin-top: 1.2vw; letter-spacing: .02em; text-transform: uppercase; }
+  .card .need { font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .06em; padding: .1vw .5vw; border-radius: 999px; background: #1E1B2E; color: #F6EAD2; border: .1vw solid #E3C98F; text-transform: uppercase; }
+  .card .tx { font-family: var(--label); font-weight: 600; font-size: .85vw; line-height: 1.2; }
+  .card img { display: block; width: 100%; flex: 1; min-height: 0; object-fit: cover; border-top: .2vw solid #E3C98F; }
+  .card.q { box-shadow: 0 0 0 .3vw #F2C230, 0 0 1.4vw .2vw rgba(242,194,48,.55); transform: translateY(-.3vw); }
+  .card.use { box-shadow: 0 0 0 .35vw #E0604F, 0 0 1.8vw .4vw rgba(224,96,79,.7); transform: scale(1.04); z-index: 2; }
+  .card.dim { filter: saturate(.4) brightness(.6); }
+  .center { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; gap: .6vw; min-height: 0; position: relative; }
+  .portrait { flex: 1; min-height: 0; border: .25vw solid #E3C98F; border-radius: 1vw; overflow: hidden; box-shadow: 0 0 0 .15vw #0B0F14; position: relative; background: #2A2A30; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
+  .portrait .nameplate { position: absolute; left: 0; right: 0; bottom: 0; padding: .6vw .8vw; background: rgba(14,20,26,.82); display: flex; align-items: flex-end; justify-content: space-between; gap: .6vw; }
+  .nameplate .hn { font-family: var(--display); font-size: 2.3vw; line-height: .95; color: #fff; }
+  .nameplate .pn { font-family: var(--label); font-weight: 700; font-size: .8vw; letter-spacing: .12em; text-transform: uppercase; color: #E3C98F; }
+  .nameplate .hpbig { font-family: var(--display); font-size: 2.6vw; line-height: 1; text-align: right; }
+  .nameplate .hpbig small { display: block; font-family: var(--label); font-size: .7vw; letter-spacing: .1em; color: #F2C230; }
+  .tokens { display: flex; flex-wrap: wrap; justify-content: center; gap: .4vw .7vw; padding: .5vw .6vw; background: rgba(30,27,46,.9); border: .18vw solid #E3C98F; border-radius: .8vw; }
+  .tok { display: flex; align-items: center; gap: .35vw; font-family: var(--label); font-weight: 700; font-size: .85vw; opacity: .35; }
+  .tok i { width: 1.4vw; height: 1.4vw; border-radius: 50%; border: .15vw solid #0B0F14; box-shadow: 0 0 0 .1vw #E3C98F; display: inline-block; }
+  .tok.on { opacity: 1; }
+  .tok.bad i { box-shadow: 0 0 0 .1vw #E0604F; }
+  .ult { background: #1E1B2E; border: .2vw solid #19B6C9; border-radius: .9vw; padding: .5vw .8vw; display: flex; gap: .7vw; align-items: center; }
+  .ult b.k { font-family: var(--display); font-size: 1.2vw; font-weight: 400; color: #fff; white-space: nowrap; }
+  .ult span { font-family: var(--label); font-weight: 600; font-size: .85vw; line-height: 1.2; }
+  .ult.q { box-shadow: 0 0 0 .3vw #F2C230, 0 0 1.4vw .2vw rgba(242,194,48,.55); }
+  .ult.use { box-shadow: 0 0 0 .35vw #E0604F, 0 0 1.8vw .4vw rgba(224,96,79,.7); }
+  .sidebar { display: flex; flex-direction: column; gap: .8vw; min-height: 0; }
+  .spanel { background: #222E3A; border: .18vw solid #3A4A5A; border-radius: 1vw; padding: .8vw; }
+  .spanel .lbl { font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .18em; text-transform: uppercase; color: #B9C2CC; margin-bottom: .4vw; }
+  .who { font-family: var(--display); font-size: 1.5vw; line-height: 1.05; }
+  .who small { display: block; font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .12em; text-transform: uppercase; color: #F2C230; margin-top: .25vw; }
+  .dice { display: flex; gap: .6vw; flex-wrap: wrap; min-height: 5vw; margin-top: .5vw; }
+  .die { width: 4.1vw; height: 4.6vw; border-radius: .8vw; border: .2vw solid #0B0F14; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1vw; font-family: var(--display); font-size: 2vw; line-height: 1; box-shadow: .25vw .25vw 0 #0B0F14; }
+  .die small { font-family: var(--label); font-weight: 700; font-size: .55vw; letter-spacing: .04em; text-transform: uppercase; }
+  .die.blank { background: #3A4A5A; color: #B9C2CC; }
+  .die.kept { box-shadow: 0 0 0 .3vw #19B6C9, .25vw .25vw 0 #0B0F14; transform: translateY(-.4vw); }
+  .die.rolling { animation: tumble .6s ease; }
+  @keyframes tumble { 0% { transform: rotate(0) scale(1); } 30% { transform: rotate(-20deg) scale(1.1); } 60% { transform: rotate(16deg) scale(.95); } 100% { transform: rotate(0) scale(1); } }
+  .event { font-size: 1vw; line-height: 1.3; font-weight: 600; border-left: .4vw solid #19B6C9; padding: .5vw .7vw; background: #1A242E; border-radius: 0 .6vw .6vw 0; }
+  .event.fresh { animation: flash 1.2s ease; }
+  @keyframes flash { from { background: #4A4020; } to { background: #1A242E; } }
+  .reveal { background: #F6EAD2; color: #1E1B2E; border: .22vw solid #E3C98F; border-radius: .9vw; padding: .7vw .8vw; box-shadow: 0 0 0 .15vw #0B0F14; }
+  .reveal.fresh { animation: pop .5s ease; }
+  @keyframes pop { 0% { transform: scale(.7) rotate(-4deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+  .reveal .top { display: flex; justify-content: space-between; font-family: var(--label); font-weight: 700; font-size: .75vw; letter-spacing: .12em; text-transform: uppercase; color: #5E5870; }
+  .reveal .cn { font-family: var(--display); font-size: 1.4vw; line-height: 1.05; margin: .2vw 0; }
+  .reveal .ct { font-size: .95vw; line-height: 1.25; }
+  .log { list-style: none; margin: 0; padding: 0; font-size: .8vw; color: #B9C2CC; overflow: hidden; }
+  .log li { padding: .35vw 0; border-bottom: .1vw solid #3A4A5A; line-height: 1.3; }
+  .code-small { font-family: var(--display); font-size: 1.3vw; letter-spacing: .12em; }
+  .done { flex: 1; display: grid; place-items: center; text-align: center; padding: 30px; }
+  .done .win { font-family: var(--display); font-size: clamp(70px, 9vw, 150px); line-height: .95; margin: .1em 0 .2em; }
+  .net { position: fixed; right: 14px; bottom: 10px; font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 14px; color: var(--red); }
+  [hidden] { display: none !important; }
+  @media (max-width: 820px) { .lobby { grid-template-columns: 1fr; } .slots { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { .die.rolling, .event.fresh { animation: none; } }
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+
+<section id="setup" class="center" hidden>
+  <div>
+    <p class="title">Super Smash Rolls</p>
+    <p class="eyebrow">Type the game code</p>
+    <input id="code-input" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Game code">
+    <p class="err" id="setup-error" role="alert"></p>
+    <p class="hint">Start a game on a phone first. The phone shows the four-letter code.</p>
+  </div>
+</section>
+
+<section id="connecting" class="center">
+  <div>
+    <p class="title">Super Smash Rolls</p>
+    <p class="eyebrow" id="connecting-text">Connecting to the game server</p>
+    <p class="hint" id="connecting-hint"></p>
+  </div>
+</section>
+
+<main id="lobby" class="lobby" hidden>
+  <div>
+    <p class="title" style="font-size:clamp(40px,4vw,80px)">Super Smash Rolls</p>
+    <div class="codecard panel">
+      <p class="eyebrow">Game code</p>
+      <div class="code" id="board-code">----</div>
+    </div>
+    <div class="join">
+      <div id="qr" aria-label="QR code to join"></div>
+      <div class="join-text">Scan with your phone camera, or open<br><b id="join-url"></b><br>and type the code.</div>
+    </div>
+  </div>
+  <div>
+    <p class="eyebrow">Fighters · <span id="count">0</span> of 4</p>
+    <div class="slots" id="slots"></div>
+  </div>
+</main>
+
+<main id="game" class="game" hidden>
+  <div class="strip" id="strip"></div>
+  <div class="main">
+    <div class="mat" id="mat"></div>
+    <aside class="sidebar">
+      <div class="spanel">
+        <div class="who" id="who">—</div>
+        <div class="dice" id="dice"></div>
+      </div>
+      <div class="event" id="event">Fight!</div>
+      <div class="reveal" id="reveal" hidden></div>
+      <div class="spanel" style="flex: 1; min-height: 0; overflow: hidden;">
+        <div class="lbl">What happened</div>
+        <ul class="log" id="log"></ul>
+      </div>
+      <div class="spanel" style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="lbl" style="margin: 0;">Game code</span><span class="code-small" id="side-code">----</span>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<main id="done" class="done" hidden>
+  <div>
+    <p class="eyebrow">Fight over</p>
+    <p class="win" id="win-name">—</p>
+    <p id="win-text" style="color:var(--muted)"></p>
+    <p class="hint">The host can set up a rematch from their phone.</p>
+  </div>
+</main>
+
+<div class="net" id="net" hidden>Reconnecting</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = ['setup', 'connecting', 'lobby', 'game', 'done'];
+  function show(which) { screens.forEach(function (s) { $(s).hidden = s !== which; }); }
+  if (typeof io === 'undefined') {
+    $('connecting-text').textContent = 'Could not reach the game server';
+    $('connecting-hint').textContent = 'Check this device is online, then reload the page.';
+    return;
+  }
+  var socket = io('/smash');
+  var watching = null, lastEvent = 0, lastRoll = null;
+  var fromUrl = (location.pathname.match(/\/tv\/([A-Za-z]{4})$/) || [])[1];
+  setTimeout(function () {
+    if (!socket.connected) $('connecting-hint').textContent = 'If nobody has played in a while, the free server takes about a minute to wake up. Keep this page open.';
+  }, 6000);
+
+  function watch(code) {
+    socket.emit('tv:watch', { code: code }, function (res) {
+      if (res && res.error) {
+        watching = null; fromUrl = null;
+        $('setup-error').textContent = res.error;
+        $('code-input').value = '';
+        show('setup'); $('code-input').focus();
+        return;
+      }
+      watching = res.code;
+      history.replaceState(null, '', '/smash/tv/' + res.code);
+    });
+  }
+  $('code-input').addEventListener('input', function () {
+    $('setup-error').textContent = '';
+    this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '');
+    if (this.value.length === 4) watch(this.value);
+  });
+  socket.on('connect', function () {
+    $('net').hidden = true;
+    if (watching) watch(watching);
+    else if (fromUrl) watch(fromUrl.toUpperCase());
+    else { show('setup'); $('code-input').focus(); }
+  });
+  socket.on('disconnect', function () { $('net').hidden = false; });
+
+  var qrFor = null;
+  function drawQr(url) {
+    if (qrFor === url || typeof QRCode === 'undefined') return;
+    qrFor = url;
+    $('qr').textContent = '';
+    new QRCode($('qr'), { text: url, width: 256, height: 256, colorDark: '#1E1B2E', colorLight: '#FFFFFF' });
+  }
+
+  var S = null;
+  socket.on('state', function (s) {
+    if (s.code !== watching && s.code !== (fromUrl || '').toUpperCase()) return;
+    S = s;
+    if (s.phase === 'lobby') renderLobby(s);
+    else if (s.phase === 'play') renderGame(s);
+    else renderDone(s);
+  });
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+  function textOn(hex) {
+    var c = hex.replace('#', '');
+    var r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1E1B2E' : '#FFFFFF';
+  }
+  function mono(h) {
+    if (h && h.art) { var im = el('img', 'mono'); im.src = h.art; im.alt = ''; im.style.objectFit = 'cover'; im.style.objectPosition = 'center 25%'; im.style.padding = '0'; return im; }
+    var m = el('div', 'mono', h ? h.name.charAt(0) : '?');
+    m.style.background = h ? h.color : '#EADFCB';
+    m.style.color = h ? textOn(h.color) : '#5E5870';
+    return m;
+  }
+  function fighter(s, id) { return s.fighters.filter(function (f) { return f.id === id; })[0]; }
+
+  function renderLobby(s) {
+    show('lobby');
+    $('board-code').textContent = s.code;
+    $('join-url').textContent = location.host + '/smash';
+    drawQr(location.origin + '/smash/join/' + s.code);
+    var all = s.players.map(function (p) { return { name: p.name, hero: p.hero, sub: !p.connected ? 'Phone away' : p.isHost ? 'Host' : 'Ready' }; })
+      .concat(s.bots.map(function (b) { return { name: b.name, hero: b.hero, sub: 'Bot' }; }));
+    $('count').textContent = all.length;
+    var slots = $('slots');
+    slots.textContent = '';
+    for (var i = 0; i < s.maxFighters; i++) {
+      var p = all[i];
+      var h = p && p.hero ? s.heroes[p.hero] : null;
+      var slot = el('div', 'slot panel' + (p ? '' : ' open'));
+      slot.appendChild(mono(h));
+      var t = el('div');
+      t.appendChild(el('div', 'hn', p ? (h ? h.name : 'Picking a hero…') : 'Open seat'));
+      if (p) t.appendChild(el('div', 'pn', p.name + ' · ' + p.sub));
+      slot.appendChild(t);
+      slots.appendChild(slot);
+    }
+  }
+
+  // ---------------------------------------------------------------- the playmat
+  var CARD_BG = {
+    aang: { whip: '#1F4E7A', scooter: '#8A5E14', flash: '#24394F', fists: '#16606B', avalanche: '#2B5E34', dragon: '#8E2A1F', combust: '#6E2A1C', defense: '#5A2418' },
+    link: { slash: '#24406E', hookshot: '#1F5E3C', boomerang: '#27402C', spin: '#6E5518', hammer: '#7A2626', bombs: '#5A3A1E', bow: '#2E2A4A', defense: '#3A2A52' },
+    onua: { swipe: '#2E2A45', rockslide: '#5E4A30', tunnel: '#28343A', mask: '#1C1A2A', night: '#3B5A1F', grip: '#4A3A2A', quake: '#3A2A1E', defense: '#2B2620' }
+  };
+  var MAT_BG = { aang: ['#1D2B3B', '#3A2419'], link: ['#1C2A20', '#2A2240'], onua: ['#1E2A2E', '#33291E'] };
+  var SPACE_CELL = { 1: [1, 1], 2: [2, 1], 3: [4, 1], 4: [5, 1], 5: [1, 2], 6: [2, 2], 7: [4, 2], 8: [5, 2] };
+  var pinned = null, lastCard = null, lastCardN = 0;
+
+  function lvl(f, id) { return (f.upgrades && f.upgrades[id]) || 1; }
+  function usedName(s, f) {
+    if (s.pending && s.pending.attackerId === f.id) return s.pending.ability;
+    var e = s.event;
+    if (e && e.by === f.id && (e.kind === 'hit' || e.kind === 'attack') && e.abilityName) return e.abilityName;
+    return null;
+  }
+
+  function renderMat(s, f, defId) {
+    var h = s.heroes[f.hero];
+    var mat = $('mat');
+    mat.textContent = '';
+    var bgs = MAT_BG[f.hero] || ['#1D2B3B', '#3A2419'];
+    mat.style.background = bgs[0];
+    var half = el('div', 'half'); half.style.background = bgs[1]; mat.appendChild(half);
+    var isActive = f.id === s.activeId;
+    var rolling = isActive && s.step === 'roll' && s.dice && s.dice.rolled;
+    var q = {};
+    if (rolling) (s.qualifying || []).forEach(function (x) { q[x.id] = x; });
+    var used = usedName(s, f);
+    var bg = CARD_BG[f.hero] || {};
+
+    h.abilities.forEach(function (a) {
+      var cls = 'card' + (used === a.name ? ' use' : q[a.id] ? ' q' : rolling ? ' dim' : '');
+      var c = el('div', cls);
+      var cell = SPACE_CELL[a.space] || [1, 1];
+      c.style.gridColumn = cell[0]; c.style.gridRow = cell[1];
+      c.style.background = bg[a.id] || '#24394F';
+      c.appendChild(el('span', 'sp', a.space));
+      var L = lvl(f, a.id);
+      if (L > 1) c.appendChild(el('span', 'lv', 'II'));
+      var body = el('div', 'body');
+      body.appendChild(el('div', 't', a.name));
+      body.appendChild(el('div', 'need', a.need));
+      body.appendChild(el('div', 'tx', a.text[L - 1] || a.text[0]));
+      c.appendChild(body);
+      var img = el('img'); img.src = a.art; img.alt = ''; c.appendChild(img);
+      mat.appendChild(c);
+    });
+
+    // Space 8: defense
+    var d = h.defense;
+    var defending = s.step === 'defend' && defId === f.id;
+    var dc = el('div', 'card' + (defending ? ' use' : ''));
+    dc.style.gridColumn = 5; dc.style.gridRow = 2;
+    dc.style.background = bg.defense || '#3A2A52';
+    dc.appendChild(el('span', 'sp', 8));
+    if (lvl(f, d.id) > 1) dc.appendChild(el('span', 'lv', 'II'));
+    var db = el('div', 'body');
+    db.style.justifyContent = 'center'; db.style.flex = '1';
+    db.appendChild(el('div', 't', d.name));
+    db.appendChild(el('div', 'need', 'Defense'));
+    db.appendChild(el('div', 'tx', d.text[lvl(f, d.id) - 1] || d.text[0]));
+    dc.appendChild(db);
+    mat.appendChild(dc);
+
+    // Center: portrait, tokens, ultimate
+    var center = el('div', 'center');
+    var por = el('div', 'portrait');
+    var pimg = el('img'); pimg.src = h.art; pimg.alt = h.name; por.appendChild(pimg);
+    var np = el('div', 'nameplate');
+    var left = el('div');
+    left.appendChild(el('div', 'hn', h.name));
+    left.appendChild(el('div', 'pn', f.name + ' · ' + h.title + (f.bot ? ' · bot' : '')));
+    var hp = el('div', 'hpbig', f.alive ? f.hp + '/' + f.maxHp : 'KO');
+    hp.appendChild(el('small', '', f.cp + ' CP · ' + f.cards + ' cards in hand'));
+    np.appendChild(left); np.appendChild(hp);
+    por.appendChild(np);
+    center.appendChild(por);
+
+    var toks = el('div', 'tokens');
+    var have = {};
+    f.tokens.forEach(function (t) { have[t.id] = t.n; });
+    (h.tokenSlots || []).forEach(function (id) {
+      var info = s.tokenInfo[id];
+      var n = have[id] || 0;
+      var t = el('span', 'tok' + (n ? ' on' : ''));
+      var dot = el('i'); dot.style.background = info.color; t.appendChild(dot);
+      t.appendChild(document.createTextNode(info.name + (info.max > 1 ? ' ' + n + '/' + info.max : '')));
+      toks.appendChild(t);
+    });
+    function status(on, label, color) {
+      if (!on) return;
+      var t = el('span', 'tok on bad');
+      var dot = el('i'); dot.style.background = color; t.appendChild(dot);
+      t.appendChild(document.createTextNode(label));
+      toks.appendChild(t);
+    }
+    status(f.status.burn, 'Burn ×' + f.status.burn, '#E0604F');
+    status(f.status.knockdown, 'Knocked Down', '#8A6B45');
+    status(f.status.frozen, 'Frozen', '#7FC8F0');
+    status(f.shield, 'Shield ' + f.shield, '#B9C2CC');
+    status(f.sealed, 'Ultimate sealed', '#5E5870');
+    center.appendChild(toks);
+
+    var u = h.ultimate;
+    var ult = el('div', 'ult' + (used === u.name ? ' use' : q[u.id] ? ' q' : ''));
+    ult.style.borderColor = h.accent;
+    var k = el('b', 'k', 'ULTIMATE');
+    ult.appendChild(k);
+    var ut = el('span');
+    var nm = el('b', '', u.name.toUpperCase() + ' '); nm.style.color = h.accent;
+    ut.appendChild(nm);
+    ut.appendChild(document.createTextNode('· ' + u.need + '. ' + u.text[0]));
+    ult.appendChild(ut);
+    center.appendChild(ult);
+    mat.appendChild(center);
+  }
+
+  function renderGame(s) {
+    show('game');
+    $('side-code').textContent = s.code;
+    var defId = s.pending ? s.pending.defenderId : null;
+    if (pinned && !fighter(s, pinned)) pinned = null;
+    var focusId = pinned || (s.step === 'defend' && defId ? defId : s.activeId);
+    var f = fighter(s, focusId) || s.fighters[0];
+
+    var strip = $('strip');
+    strip.textContent = '';
+    s.fighters.forEach(function (x) {
+      var h = s.heroes[x.hero];
+      var b = el('button', 'ftr' + (!x.alive ? ' out' : x.id === defId ? ' def' : x.id === s.activeId ? ' now' : '') + (x.id === f.id ? ' focus' : ''));
+      b.setAttribute('aria-pressed', pinned === x.id ? 'true' : 'false');
+      b.setAttribute('aria-label', (pinned === x.id ? 'Unpin ' : 'Show ') + x.name + "'s board on this TV");
+      var img = el('img'); img.src = h.art; img.alt = ''; b.appendChild(img);
+      b.appendChild(el('div', 'nm', x.name));
+      var hp = el('div', 'hp', x.alive ? x.hp : 'KO');
+      hp.appendChild(el('small', '', x.cp + ' CP · ' + x.cards + ' cards'));
+      b.appendChild(hp);
+      b.appendChild(el('div', 'sub', h.name + (x.bot ? ' · bot' : '') + (x.connected ? '' : ' · away')));
+      var bar = el('div', 'bar'); var i = el('i');
+      i.style.width = Math.max(0, Math.round(100 * x.hp / x.maxHp)) + '%';
+      i.style.background = h.accent;
+      bar.appendChild(i); b.appendChild(bar);
+      if (x.alive && x.id === defId) b.appendChild(el('span', 'tag def', 'DEFENDING'));
+      else if (x.alive && x.id === s.activeId) b.appendChild(el('span', 'tag', 'TURN'));
+      if (pinned === x.id) b.appendChild(el('span', 'tag pin', 'PINNED'));
+      b.addEventListener('click', function () { pinned = pinned === x.id ? null : x.id; renderGame(S); });
+      strip.appendChild(b);
+    });
+
+    renderMat(s, f, defId);
+
+    // Sidebar: whose move, dice, event, played card, log
+    var act = fighter(s, s.activeId);
+    var d = s.dice;
+    var who = $('who');
+    who.textContent = '';
+    if (s.step === 'defend' && s.pending) {
+      var att = fighter(s, s.pending.attackerId), def = fighter(s, s.pending.defenderId);
+      who.appendChild(document.createTextNode(att.name + ' → ' + def.name));
+      who.appendChild(el('small', '', s.pending.ability + ' · ' + s.pending.dmg + ' dmg incoming' + (s.pending.dodge ? ' · dodged!' : '')));
+    } else if (act) {
+      who.appendChild(document.createTextNode(act.name + "'s turn"));
+      var stepText = { main1: 'Playing cards', roll: 'Rolling', main2: 'Wrapping up' }[s.step] || '';
+      if (s.step === 'roll' && d) stepText += ' · ' + d.rollsLeft + ' roll' + (d.rollsLeft === 1 ? '' : 's') + ' left';
+      who.appendChild(el('small', '', stepText));
+    }
+    var dice = $('dice');
+    dice.textContent = '';
+    if (d) {
+      var owner = fighter(s, d.owner);
+      var oh = s.heroes[owner.hero];
+      var fresh = (d.owner + ':' + d.kind + ':' + d.rolled) !== lastRoll;
+      d.values.forEach(function (v, idx) {
+        var die = el('div', 'die');
+        if (!v) { die.className += ' blank'; die.textContent = '?'; }
+        else {
+          var sym = oh.symbols[oh.faces[v]];
+          die.style.background = sym.color;
+          die.style.color = textOn(sym.color);
+          die.appendChild(document.createTextNode(v));
+          die.appendChild(el('small', '', sym.name));
+          if (d.kind === 'offense' && d.kept[idx] && !d.done) die.className += ' kept';
+          if (fresh && d.rolled && !(d.kept[idx] && d.kind === 'offense')) die.className += ' rolling';
+        }
+        dice.appendChild(die);
+      });
+      lastRoll = d.owner + ':' + d.kind + ':' + d.rolled;
+    }
+    var ev = $('event');
+    if (s.event) {
+      ev.textContent = s.event.text;
+      if (s.event.n !== lastEvent) {
+        lastEvent = s.event.n;
+        ev.classList.remove('fresh'); void ev.offsetWidth; ev.classList.add('fresh');
+      }
+    }
+    // A card shows on the TV only once it is played.
+    if (s.event && s.event.kind === 'card' && s.event.cardInfo && s.event.n !== lastCardN) {
+      lastCardN = s.event.n;
+      lastCard = { info: s.event.cardInfo, by: s.event.by, target: s.event.target, fresh: true };
+    }
+    var rv = $('reveal');
+    rv.hidden = !lastCard;
+    if (lastCard) {
+      rv.textContent = '';
+      var by = fighter(s, lastCard.by);
+      var tg = lastCard.target ? fighter(s, lastCard.target) : null;
+      var top = el('div', 'top');
+      top.appendChild(el('span', '', 'Played by ' + (by ? by.name : '?') + (tg ? ' on ' + tg.name : '')));
+      top.appendChild(el('span', '', lastCard.info.type + ' · ' + lastCard.info.cost + ' CP'));
+      rv.appendChild(top);
+      rv.appendChild(el('div', 'cn', lastCard.info.name));
+      rv.appendChild(el('div', 'ct', lastCard.info.text));
+      if (lastCard.fresh) { rv.classList.remove('fresh'); void rv.offsetWidth; rv.classList.add('fresh'); lastCard.fresh = false; }
+    }
+    var log = $('log');
+    log.textContent = '';
+    (s.log || []).slice(1, 9).forEach(function (t) { log.appendChild(el('li', '', t)); });
+  }
+
+  function renderDone(s) {
+    show('done'); lastCard = null;
+    var w = fighter(s, s.winnerId);
+    $('win-name').textContent = w ? w.name + ' wins!' : 'Draw!';
+    if (w) $('win-name').style.color = s.heroes[w.hero].color === '#3B3552' ? '#1E1B2E' : s.heroes[w.hero].color;
+    $('win-text').textContent = w ? 'Playing ' + s.heroes[w.hero].name + '. ' + (s.event ? s.event.text : '') : '';
+  }
+})();
+</script>
+</body>
+</html>

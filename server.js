@@ -16,6 +16,7 @@ app.get('/join/:code', page('index.html'));
 app.get('/tv', page('tv.html'));
 app.get('/tv/:code', page('tv.html'));
 app.get('/healthz', (req, res) => res.send('ok'));
+require('./smash-server')(app, io); // Super Smash Rolls at /smash
 
 // Send the shared view to the whole room, then each phone its own hand.
 function broadcast(room) {
@@ -112,3 +113,4 @@ setInterval(() => G.sweep(), 60 * 1000);
 server.listen(PORT, () => {
   console.log(`Pit Lane is running on port ${PORT}`);
 });
+
