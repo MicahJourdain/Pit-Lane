@@ -84,5 +84,10 @@ for (let i = 0; i < 7; i++) G.join(big.code, 'b' + i, 'D' + i, 'x');
 check('ninth driver is refused', G.join(big.code, 'b9', 'X', 'x').error, 'That game is full. Eight drivers is the limit.');
 check('a returning driver still gets in', !!G.join(big.code, 'b3', 'D3', 'y').player, true);
 
+console.log('\nPick your own code');
+check('race host picks ZOOM', G.create('z1', 'Z', 'x', Math.random, 'zoom').room.code, 'ZOOM');
+check('taken race code refused', G.create('z2', 'Z', 'x', Math.random, 'ZOOM').error, 'The code ZOOM is already in use. Pick another, or leave it blank.');
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
+

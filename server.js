@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 // All files sit next to this one, so the project uploads to GitHub by drag-and-drop.
 const page = (file) => (req, res) => res.sendFile(path.join(__dirname, file));
-app.get('/', page('index.html'));
+app.get('/', page('home.html'));        // game menu
+app.get('/race', page('index.html'));
 app.get('/join/:code', page('index.html'));
 app.get('/tv', page('tv.html'));
 app.get('/tv/:code', page('tv.html'));
@@ -40,11 +41,12 @@ function seat(socket, room, player, ack) {
 io.on('connection', (socket) => {
   const reply = (ack) => (typeof ack === 'function' ? ack : () => {});
 
-  socket.on('room:create', ({ token, name } = {}, ack) => {
+  socket.on('room:create', ({ token, name, code } = {}, ack) => {
     ack = reply(ack);
     if (!token) return ack({ error: 'This phone has no player id. Reload the page.' });
-    const { room, player } = G.create(String(token), name, socket.id);
-    seat(socket, room, player, ack);
+    const res = G.create(String(token), name, socket.id, Math.random, code);
+    if (res.error) return ack(res);
+    seat(socket, res.room, res.player, ack);
   });
 
   socket.on('room:join', ({ token, name, code } = {}, ack) => {

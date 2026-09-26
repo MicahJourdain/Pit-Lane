@@ -102,9 +102,13 @@ function attach(room, token, name, socketId) {
   return p;
 }
 
-function create(token, name, socketId) {
+// A player may pick their own 4-letter code. Blank → a random one.
+function create(token, name, socketId, wanted = '') {
+  const c = normalizeCode(wanted);
+  if (c && c.length !== 4) return { error: 'Your own code needs exactly 4 letters, or leave it blank for a random one.' };
+  if (c && rooms.has(c)) return { error: `The code ${c} is already in use. Pick another, or leave it blank.` };
   const room = {
-    code: makeCode(), players: new Map(), hostToken: token, nextSeq: 0,
+    code: c || makeCode(), players: new Map(), hostToken: token, nextSeq: 0,
     phase: 'lobby', bots: [], fighters: [], turn: 0, turnNo: 0, step: null,
     dice: null, pending: null, turnFlags: {}, skipRoll: false,
     winnerId: null, event: null, log: [], stepAt: 0, gameNo: 0, lastActive: Date.now()

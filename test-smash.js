@@ -141,6 +141,13 @@ check('no skip before 15 s', S.tick(a, 10000), false);
 check('turn passes after 15 s', S.tick(a, 16000), true);
 check('bot is up', active(a).bot, true);
 
+console.log('\nPick your own code');
+check('host picks NAIL', S.create('t-n', 'N', 'x', 'nail').room.code, 'NAIL');
+check('NAIL can be joined', !!S.join('NAIL', 't-n2', 'M', 'x').player, true);
+check('a taken code is refused', S.create('t-n3', 'O', 'x', 'NAIL').error, 'The code NAIL is already in use. Pick another, or leave it blank.');
+check('wrong length is refused', S.create('t-n4', 'O', 'x', 'ab').error, 'Your own code needs exactly 4 letters, or leave it blank for a random one.');
+check('blank gives a random code', S.create('t-n5', 'O', 'x', '').room.code.length, 4);
+
 console.log('\nFull room');
 const big = S.create('h', 'Host', 'x').room;
 for (let i = 0; i < 3; i++) S.join(big.code, 'b' + i, 'P' + i, 'x');

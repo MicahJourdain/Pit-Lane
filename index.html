@@ -215,7 +215,7 @@
     </div>
 
     <div class="field">
-      <label for="code">Game code from the TV</label>
+      <label for="code">Game code: type the TV's to join, or your own to start one</label>
       <input id="code" class="code" maxlength="4" autocomplete="off" autocapitalize="characters"
              spellcheck="false" placeholder="ABCD" enterkeyhint="go">
     </div>
@@ -223,7 +223,7 @@
     <button id="btn-join">Join game</button>
 
     <div class="divider">or</div>
-    <button id="btn-create" class="ghost">Start a new game</button>
+    <button id="btn-create" class="ghost">Start a new game (blank code = random)</button>
 
     <p class="error" id="entry-error" role="alert"></p>
     <p class="note" id="entry-status">Connecting to the game server…</p>
@@ -399,7 +399,7 @@ window.addEventListener('error', function (ev) {
   $('btn-create').addEventListener('click', function () {
     if (needName()) return;
     $('btn-join').disabled = $('btn-create').disabled = true;
-    socket.emit('room:create', { token: token, name: $('name').value }, afterSeat);
+    socket.emit('room:create', { token: token, name: $('name').value, code: $('code').value }, afterSeat);
   });
 
   $('btn-start').addEventListener('click', function () {
@@ -442,7 +442,7 @@ window.addEventListener('error', function (ev) {
     socket.emit('player:leave');
     room = null; state = null; me = null; armed = null;
     store.del('room');
-    history.replaceState(null, '', '/');
+    history.replaceState(null, '', '/race');
     $('entry-error').textContent = '';
     setLive(true);
     show('entry');
@@ -595,3 +595,4 @@ window.addEventListener('error', function (ev) {
 </script>
 </body>
 </html>
+

@@ -124,9 +124,20 @@ function attach(room, token, name, socketId) {
   return p;
 }
 
-function create(token, name, socketId, rng = Math.random) {
+// A player may pick their own 4-letter code. Blank → a random one.
+function pickCode(wanted, rng) {
+  const c = normalizeCode(wanted);
+  if (!c) return { code: makeCode(rng) };
+  if (c.length !== 4) return { error: 'Your own code needs exactly 4 letters, or leave it blank for a random one.' };
+  if (rooms.has(c)) return { error: `The code ${c} is already in use. Pick another, or leave it blank.` };
+  return { code: c };
+}
+
+function create(token, name, socketId, rng = Math.random, wanted = '') {
+  const pick = pickCode(wanted, rng);
+  if (pick.error) return { error: pick.error };
   const room = {
-    code: makeCode(rng),
+    code: pick.code,
     players: new Map(),
     hostToken: token,
     nextSeq: 0,
@@ -352,3 +363,4 @@ module.exports = {
   rooms, get, create, join, leave, markAway, start, takeTurn, skipIfAway,
   publicState, privateState, sweep, cleanName, normalizeCode, currentToken
 };
+

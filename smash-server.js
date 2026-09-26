@@ -40,11 +40,12 @@ module.exports = function smash(app, io) {
       broadcast(room);
     }
 
-    socket.on('room:create', ({ token, name } = {}, ack) => {
+    socket.on('room:create', ({ token, name, code } = {}, ack) => {
       ack = reply(ack);
       if (!token) return ack({ error: 'This phone has no player id. Reload the page.' });
-      const { room, player } = S.create(String(token), name, socket.id);
-      seat(room, player, ack);
+      const res = S.create(String(token), name, socket.id, code);
+      if (res.error) return ack(res);
+      seat(res.room, res.player, ack);
     });
 
     socket.on('room:join', ({ token, name, code } = {}, ack) => {

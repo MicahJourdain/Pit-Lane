@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4ECDD">
+<title>Super Smash Rolls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #F4ECDD;
+    --card: #FFFFFF;
+    --ink: #1E1B2E;
+    --muted: #5E5870;
+    --line: #1E1B2E;
+    --teal: #19B6C9;
+    --gold: #E0A526;
+    --red: #C8362A;
+    --green: #2F8A43;
+    --soft: #EADFCB;
+    --display: 'Anton', 'Impact', sans-serif;
+    --label: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --body: 'Barlow', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { min-height: 100svh; font-family: var(--body); font-size: 16px; line-height: 1.4; -webkit-text-size-adjust: 100%; }
+  .stripe { height: 8px; background: linear-gradient(90deg, #F2B544 0 25%, #2A7FD4 25% 50%, #2F8A43 50% 75%, #C8362A 75%); }
+  .banner { background: var(--red); color: #fff; font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; text-align: center; padding: 8px; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
+  .eyebrow { font-family: var(--label); font-weight: 700; font-size: 14px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: 44px; line-height: 1; margin: 0 0 20px; letter-spacing: .01em; }
+  h2 { font-family: var(--display); font-weight: 400; font-size: 26px; margin: 0 0 10px; }
+  label { display: block; font-family: var(--label); font-weight: 700; font-size: 14px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  input { width: 100%; font-family: var(--body); font-size: 20px; color: var(--ink); background: var(--card); border: 3px solid var(--line); border-radius: 12px; padding: 13px 14px; outline: none; }
+  input:focus-visible { box-shadow: 0 0 0 3px var(--teal); }
+  input.code { font-family: var(--display); font-size: 40px; letter-spacing: .3em; text-indent: .3em; text-align: center; text-transform: uppercase; }
+  .field { margin-bottom: 16px; }
+  button {
+    font-family: var(--label); font-weight: 700; font-size: 20px; letter-spacing: .08em; text-transform: uppercase;
+    padding: 14px 16px; min-height: 48px; border: 3px solid var(--line); border-radius: 12px;
+    background: var(--gold); color: var(--ink); cursor: pointer; box-shadow: 4px 4px 0 var(--line);
+  }
+  button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--line); }
+  button.wide { width: 100%; }
+  button.ghost { background: var(--card); }
+  button.dark { background: var(--ink); color: #fff; }
+  button.teal { background: var(--teal); }
+  button.small { font-size: 15px; padding: 8px 12px; min-height: 44px; box-shadow: 3px 3px 0 var(--line); }
+  button:disabled { opacity: .4; cursor: default; box-shadow: none; transform: none; }
+  button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .stack { display: grid; gap: 12px; }
+  .error { color: var(--red); font-weight: 600; min-height: 22px; margin: 12px 0 0; }
+  .note { color: var(--muted); font-size: 15px; margin: 12px 0 0; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 16px; color: var(--muted); font-family: var(--label); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--ink); opacity: .2; }
+  .panel { background: var(--card); border: 3px solid var(--line); border-radius: 16px; box-shadow: 5px 5px 0 var(--line); padding: 14px; }
+  [hidden] { display: none !important; }
+
+  /* lobby */
+  .codebox { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .codebox b { font-family: var(--display); font-weight: 400; font-size: 40px; letter-spacing: .14em; }
+  .heroes { display: grid; gap: 12px; margin-bottom: 20px; }
+  .hero {
+    display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; text-align: left;
+    text-transform: none; letter-spacing: normal; font-family: var(--body); font-weight: 400; font-size: 15px;
+    background: var(--card); padding: 12px;
+  }
+  .hero .mono { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--line); object-fit: cover; object-position: center 25%; display: block; }
+  .hero .hn { font-family: var(--display); font-size: 28px; line-height: 1; }
+  .hero .ht { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  .hero[aria-pressed="true"] { background: #FFF6DA; box-shadow: 0 0 0 4px var(--teal), 5px 5px 0 var(--line); }
+  ul.roster { list-style: none; margin: 0 0 16px; padding: 0; }
+  ul.roster li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 2px solid rgba(30,27,46,.12); }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+  ul.roster .nm { flex: 1; font-weight: 600; font-size: 18px; overflow-wrap: anywhere; }
+  ul.roster .tag { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 14px; color: var(--muted); }
+
+  /* game */
+  .me { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; margin-bottom: 14px; }
+  .me .who { font-family: var(--display); font-size: 30px; line-height: 1; }
+  .me .sub { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  .stat { text-align: center; min-width: 64px; }
+  .stat b { display: block; font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1; }
+  .stat span { font-family: var(--label); font-weight: 700; letter-spacing: .14em; font-size: 12px; }
+  .hpbar { grid-column: 1 / -1; height: 12px; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--soft); }
+  .hpbar i { display: block; height: 100%; background: var(--green); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
+  .chip { font-family: var(--label); font-weight: 700; font-size: 14px; letter-spacing: .04em; padding: 3px 9px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); }
+  .chip.bad { background: #FBD9D3; }
+  .foes { display: grid; gap: 8px; margin-bottom: 14px; }
+  .foe { display: grid; grid-template-columns: 12px 1fr auto auto; gap: 10px; align-items: center; padding: 8px 12px; background: var(--card); border: 2px solid var(--line); border-radius: 12px; }
+  .foe .fn { font-weight: 700; overflow-wrap: anywhere; line-height: 1.15; }
+  .foe .fn small { display: block; font-weight: 500; color: var(--muted); font-size: 13px; }
+  .foe .fh { font-family: var(--display); font-size: 22px; }
+  .foe .fc { font-family: var(--label); font-weight: 700; color: var(--muted); }
+  .foe.out { opacity: .45; }
+  .foe.now { box-shadow: 0 0 0 3px var(--gold); }
+  .foe .chips { grid-column: 2 / -1; }
+
+  .turn { border: 3px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; font-family: var(--display); font-size: 24px; line-height: 1.1; }
+  .turn.mine { background: var(--gold); }
+  .turn.hit { background: #FBD9D3; }
+  .turn.wait { background: var(--soft); }
+  .turn small { display: block; font-family: var(--body); font-size: 15px; margin-top: 4px; }
+
+  .dice { display: flex; gap: 8px; justify-content: center; margin: 4px 0 14px; flex-wrap: wrap; }
+  .die {
+    width: 58px; height: 64px; padding: 4px 2px; border-radius: 12px; border: 3px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    font-family: var(--display); font-size: 26px; line-height: 1; box-shadow: 3px 3px 0 var(--line); text-transform: none; letter-spacing: 0; min-height: 0;
+  }
+  .die small { font-family: var(--label); font-weight: 700; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+  .die.blank { background: var(--soft); color: var(--muted); }
+  .die.kept { box-shadow: 0 0 0 4px var(--teal), 3px 3px 0 var(--line); transform: translateY(-4px); }
+  .die.pick { box-shadow: 0 0 0 4px var(--red), 3px 3px 0 var(--line); }
+  button.die:disabled { opacity: 1; }
+  .dice-hint { text-align: center; color: var(--muted); font-size: 14px; margin: -6px 0 12px; }
+
+  .abilities { display: grid; gap: 8px; margin: 12px 0; }
+  .ab {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; text-align: left; align-items: center;
+    text-transform: none; letter-spacing: normal; font-family: var(--body); font-weight: 400; font-size: 14px; background: var(--card); padding: 10px 12px;
+  }
+  .ab b { font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.05; }
+  .ab em { font-style: normal; font-family: var(--label); font-weight: 700; font-size: 14px; color: var(--muted); text-align: right; }
+  .ab span { grid-column: 1 / -1; color: var(--muted); }
+  .ab.on { background: #FFF1C9; }
+  .ab.ult.on { background: var(--ink); color: #fff; }
+  .ab.ult.on span, .ab.ult.on em { color: #BFE9EF; }
+  .ab:disabled { opacity: .45; }
+  .ab .lv { display: inline-block; font-family: var(--label); font-weight: 700; font-size: 12px; background: var(--teal); color: var(--ink); border-radius: 6px; padding: 0 6px; margin-left: 6px; vertical-align: 3px; }
+
+  .hand { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .card { background: var(--card); border: 3px solid var(--line); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .card .kind { font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .card .cost { font-family: var(--display); font-size: 20px; color: #9A6B00; }
+  .card .cn { font-family: var(--display); font-size: 19px; line-height: 1.05; }
+  .card .ct { font-size: 14px; flex: 1; }
+  .card .why { font-size: 12px; color: var(--muted); min-height: 16px; }
+  .card.upgrade { background: #EAF8FA; }
+  .card .btns { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .card .btns button { font-size: 15px; padding: 8px; min-height: 44px; box-shadow: 2px 2px 0 var(--line); }
+
+  .event { border-left: 5px solid var(--teal); background: var(--card); padding: 10px 12px; border-radius: 0 10px 10px 0; margin: 0 0 14px; font-size: 15px; }
+  .peek { background: #EAF8FA; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
+  details.board { margin: 16px 0; }
+  details.board summary { font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; padding: 10px 0; min-height: 44px; }
+
+  /* sheet */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(30,27,46,.5); z-index: 10; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { width: 100%; max-width: 560px; background: var(--paper); border: 3px solid var(--line); border-bottom: 0; border-radius: 20px 20px 0 0; padding: 18px 16px calc(22px + env(safe-area-inset-bottom, 0px)); max-height: 88svh; overflow: auto; }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+  .choices button { font-size: 16px; }
+  .choices button[aria-pressed="true"] { background: var(--teal); }
+
+  .winner { font-family: var(--display); font-size: 56px; line-height: 1; margin: 6px 0 12px; overflow-wrap: anywhere; }
+  .status { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  .status i { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+  .status.on i { background: var(--green); }
+  button.leave { background: none; border: none; box-shadow: none; padding: 8px 0; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 4px; }
+  button.leave.confirm { color: var(--red); }
+  @media (prefers-reduced-motion: no-preference) {
+    .hpbar i { transition: width .5s ease; }
+    .die { transition: transform .15s ease, box-shadow .15s ease; }
+    .die.rolling { animation: shake .5s ease; }
+    @keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+  }
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<div class="banner" id="offline" hidden>Reconnecting</div>
+
+<div class="wrap">
+
+  <section id="entry">
+    <p class="eyebrow">Pit Lane presents</p>
+    <h1>Super Smash Rolls</h1>
+    <div class="field">
+      <label for="name">Your name</label>
+      <input id="name" maxlength="12" autocomplete="nickname" placeholder="Micah" enterkeyhint="next">
+    </div>
+    <div class="field">
+      <label for="code">Game code: type the TV's to join, or your own to start one</label>
+      <input id="code" class="code" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" enterkeyhint="go">
+    </div>
+    <button id="btn-join" class="wide">Join game</button>
+    <div class="divider">or</div>
+    <button id="btn-create" class="wide ghost">Start a new game (blank code = random)</button>
+    <p class="error" id="entry-error" role="alert"></p>
+    <p class="note" id="entry-status">Connecting to the game server…</p>
+  </section>
+
+  <section id="lobby" hidden>
+    <div class="codebox panel"><span class="eyebrow" style="margin:0">Game code</span><b id="lobby-code">----</b></div>
+    <p class="eyebrow">Pick your hero</p>
+    <div class="heroes" id="heroes"></div>
+    <p class="eyebrow">Fighters · <span id="count">0</span> of 4</p>
+    <ul class="roster" id="roster"></ul>
+    <div class="stack" id="host-tools" hidden>
+      <button id="btn-bot" class="ghost wide">Add a practice bot</button>
+      <button id="btn-start" class="wide">Start the fight</button>
+    </div>
+    <p class="note" id="lobby-note"></p>
+    <p class="note">TV: open <b id="tv-url"></b> and type the code.</p>
+  </section>
+
+  <section id="game" hidden>
+    <div class="me panel" id="me"></div>
+    <div class="foes" id="foes"></div>
+    <div class="turn wait" id="turn">Waiting…</div>
+    <div class="peek" id="peek" hidden></div>
+    <div id="dice-zone" hidden>
+      <div class="dice" id="dice"></div>
+      <p class="dice-hint" id="dice-hint"></p>
+    </div>
+    <div class="stack" id="actions"></div>
+    <div class="abilities" id="abilities" hidden></div>
+    <p class="eyebrow" style="margin-top:18px">Your cards · <span id="cp-hint"></span></p>
+    <div class="hand" id="hand"></div>
+    <div class="event" id="event" hidden></div>
+    <details class="board" id="board">
+      <summary>Your hero board</summary>
+      <div class="abilities" id="board-list"></div>
+    </details>
+  </section>
+
+  <section id="done" hidden>
+    <p class="eyebrow">Fight over</p>
+    <p class="winner" id="winner">—</p>
+    <p class="note" id="done-note"></p>
+    <div class="stack" style="margin-top:20px">
+      <button id="btn-again" class="wide" hidden>Back to hero select</button>
+    </div>
+  </section>
+
+  <p class="error" id="game-error" role="alert"></p>
+  <span class="status" id="status"><i></i><span id="status-text">Connecting</span></span>
+  <div style="margin-top:14px"><button class="leave" id="btn-leave" hidden>Leave game</button></div>
+</div>
+
+<div class="sheet-bg" id="sheet-bg" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">—</h2>
+    <p class="note" id="sheet-text" style="margin-top:0"></p>
+    <div id="sheet-body"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="ghost" id="sheet-cancel" style="flex:1">Cancel</button>
+      <button id="sheet-ok" style="flex:2" hidden>OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+window.addEventListener('error', function (ev) {
+  var box = document.getElementById('game-error') || document.getElementById('entry-error');
+  if (box) box.textContent = 'Something broke on this page: ' + (ev.message || 'unknown error') + '. Reload to try again.';
+});
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  if (typeof io === 'undefined') {
+    $('entry-error').textContent = 'Could not reach the game server. Check your internet, then reload.';
+    $('entry-status').textContent = '';
+    return;
+  }
+
+  var store = {
+    get: function (k) { try { return localStorage.getItem('smash.' + k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem('smash.' + k, v); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem('smash.' + k); } catch (e) {} }
+  };
+  var token = store.get('token');
+  if (!token) {
+    token = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    store.set('token', token);
+  }
+  var room = store.get('room');
+  var state = null, me = null, live = false, busy = false, lastRoll = 0;
+  var sheet = null; // what the bottom sheet is doing
+
+  $('name').value = store.get('name') || '';
+  var fromUrl = (location.pathname.match(/\/join\/([A-Za-z]{4})$/) || [])[1];
+  if (fromUrl) $('code').value = fromUrl.toUpperCase();
+  $('tv-url').textContent = location.host + '/smash/tv';
+
+  function show(which) {
+    ['entry', 'lobby', 'game', 'done'].forEach(function (s) { $(s).hidden = s !== which; });
+    $('btn-leave').hidden = which === 'entry';
+  }
+  function setLive(on) {
+    live = on;
+    $('btn-join').disabled = $('btn-create').disabled = !on;
+    $('entry-status').textContent = on ? '' : 'Connecting to the game server…';
+    $('status').className = 'status' + (on ? ' on' : '');
+    $('status-text').textContent = on ? 'Connected' : 'Connecting';
+  }
+  show('entry');
+  setLive(false);
+  setTimeout(function () {
+    if (!live) $('entry-status').textContent = 'Still connecting. A sleeping free server takes about a minute to wake up. Keep this page open.';
+  }, 6000);
+
+  var lock = null;
+  function wake() {
+    if (!('wakeLock' in navigator) || lock) return;
+    navigator.wakeLock.request('screen').then(function (l) { lock = l; l.addEventListener('release', function () { lock = null; }); })['catch'](function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && room) wake(); });
+
+  var socket = io('/smash');
+
+  function send(ev, args, done) {
+    socket.emit(ev, args || {}, function (res) {
+      $('game-error').textContent = res && res.error ? res.error : '';
+      if (done) done(res || {});
+    });
+  }
+
+  function afterSeat(res) {
+    if (res && res.error) { $('entry-error').textContent = res.error; setLive(true); show('entry'); return; }
+    room = res.code;
+    store.set('room', room);
+    store.set('name', $('name').value.trim());
+    history.replaceState(null, '', '/smash/join/' + room);
+    wake();
+  }
+  function needName() {
+    if ($('name').value.trim()) return false;
+    $('entry-error').textContent = 'Type your name first.';
+    $('name').focus();
+    return true;
+  }
+  $('code').addEventListener('input', function () { this.value = this.value.toUpperCase().replace(/[^A-Z]/g, ''); $('entry-error').textContent = ''; });
+  $('name').addEventListener('input', function () { $('entry-error').textContent = ''; });
+  $('btn-join').addEventListener('click', function () {
+    if (needName()) return;
+    if ($('code').value.length !== 4) { $('entry-error').textContent = 'The game code is four letters. It is on the TV.'; $('code').focus(); return; }
+    $('btn-join').disabled = $('btn-create').disabled = true;
+    socket.emit('room:join', { token: token, name: $('name').value, code: $('code').value }, afterSeat);
+  });
+  $('btn-create').addEventListener('click', function () {
+    if (needName()) return;
+    $('btn-join').disabled = $('btn-create').disabled = true;
+    socket.emit('room:create', { token: token, name: $('name').value, code: $('code').value }, afterSeat);
+  });
+  $('btn-bot').addEventListener('click', function () { send('smash:addBot', {}); });
+  $('btn-start').addEventListener('click', function () { send('smash:start'); });
+  $('btn-again').addEventListener('click', function () { send('smash:rematch'); });
+
+  var leaveTimer = null;
+  $('btn-leave').addEventListener('click', function () {
+    var b = $('btn-leave');
+    if (!b.classList.contains('confirm')) {
+      b.classList.add('confirm'); b.textContent = 'Tap again to leave for good';
+      clearTimeout(leaveTimer);
+      leaveTimer = setTimeout(function () { b.classList.remove('confirm'); b.textContent = 'Leave game'; }, 4000);
+      return;
+    }
+    clearTimeout(leaveTimer);
+    b.classList.remove('confirm'); b.textContent = 'Leave game';
+    socket.emit('player:leave');
+    room = null; state = null; me = null; closeSheet();
+    store.del('room');
+    history.replaceState(null, '', '/smash');
+    setLive(true);
+    show('entry');
+  });
+
+  socket.on('connect', function () {
+    setLive(true);
+    $('offline').hidden = true;
+    if (room) {
+      socket.emit('room:join', { token: token, name: store.get('name'), code: room }, function (res) {
+        if (res && res.error) { room = null; store.del('room'); $('entry-error').textContent = 'That game has ended. Start a new one or join another.'; show('entry'); }
+      });
+    }
+  });
+  socket.on('disconnect', function () { setLive(false); if (room) $('offline').hidden = false; });
+  socket.on('me', function (m) { me = m; render(); });
+  socket.on('state', function (s) { if (s.code !== room) return; state = s; render(); });
+
+  // ---------------------------------------------------------------- helpers
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+  function textOn(hex) {
+    var c = hex.replace('#', '');
+    var r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1E1B2E' : '#FFFFFF';
+  }
+  function hero(id) { return state.heroes[id]; }
+  function fighter(id) { return state.fighters.filter(function (f) { return f.id === id; })[0]; }
+  function sym(heroId, v) { var h = hero(heroId); var k = h.faces[v]; return h.symbols[k]; }
+  function dieEl(heroId, v, tag) {
+    var d = el(tag || 'div', 'die');
+    if (!v) { d.className += ' blank'; d.appendChild(document.createTextNode('?')); return d; }
+    var s = sym(heroId, v);
+    d.style.background = s.color;
+    d.style.color = textOn(s.color);
+    d.appendChild(document.createTextNode(v));
+    d.appendChild(el('small', '', s.name));
+    return d;
+  }
+  function tokenChips(f, wrap) {
+    f.tokens.forEach(function (t) {
+      var info = state.tokenInfo[t.id];
+      var c = el('span', 'chip', info.name + (t.n > 1 ? ' ×' + t.n : ''));
+      c.style.borderColor = info.color;
+      c.title = info.text;
+      wrap.appendChild(c);
+    });
+    if (f.status.burn) wrap.appendChild(el('span', 'chip bad', 'Burn ×' + f.status.burn));
+    if (f.status.knockdown) wrap.appendChild(el('span', 'chip bad', 'Knocked Down'));
+    if (f.status.frozen) wrap.appendChild(el('span', 'chip bad', 'Frozen'));
+    if (f.shield) wrap.appendChild(el('span', 'chip', 'Shield ' + f.shield));
+    if (f.sealed) wrap.appendChild(el('span', 'chip bad', 'Ultimate sealed'));
+  }
+  function abilityText(f, a) {
+    var lvl = (f.upgrades && f.upgrades[a.id]) || 1;
+    return a.text[lvl - 1] || a.text[0];
+  }
+
+  // ---------------------------------------------------------------- render
+  function render() {
+    if (!state || !me) return;
+    if (state.phase === 'lobby') { closeSheet(); renderLobby(); }
+    else if (state.phase === 'play') renderGame();
+    else { closeSheet(); renderDone(); }
+  }
+
+  function renderLobby() {
+    show('lobby');
+    $('lobby-code').textContent = state.code;
+    var mine = state.players.filter(function (p) { return p.id === me.id; })[0] || {};
+    var box = $('heroes');
+    box.textContent = '';
+    Object.keys(state.heroes).forEach(function (id) {
+      var h = state.heroes[id];
+      var b = el('button', 'hero');
+      b.setAttribute('aria-pressed', mine.hero === id ? 'true' : 'false');
+      var mono = el('img', 'mono');
+      mono.src = h.art; mono.alt = '';
+      mono.style.background = h.color;
+      var txt = el('span');
+      txt.appendChild(el('div', 'hn', h.name));
+      txt.appendChild(el('div', 'ht', h.title));
+      txt.appendChild(el('div', '', h.blurb));
+      b.appendChild(mono); b.appendChild(txt);
+      b.addEventListener('click', function () { send('smash:hero', { hero: id }); });
+      box.appendChild(b);
+    });
+    var list = $('roster');
+    list.textContent = '';
+    state.players.forEach(function (p) {
+      var li = el('li');
+      var dot = el('span', 'dot'); dot.style.background = p.color; li.appendChild(dot);
+      li.appendChild(el('span', 'nm', p.name + (p.id === me.id ? ' (you)' : '')));
+      li.appendChild(el('span', 'tag', !p.connected ? 'Away' : p.hero ? hero(p.hero).name : 'Picking…'));
+      list.appendChild(li);
+    });
+    state.bots.forEach(function (b) {
+      var li = el('li');
+      var dot = el('span', 'dot'); dot.style.background = '#fff'; li.appendChild(dot);
+      li.appendChild(el('span', 'nm', b.name));
+      li.appendChild(el('span', 'tag', hero(b.hero).name));
+      if (me.isHost) {
+        var x = el('button', 'small ghost', 'Remove');
+        x.addEventListener('click', function () { send('smash:removeBot', { id: b.id }); });
+        li.appendChild(x);
+      }
+      list.appendChild(li);
+    });
+    var n = state.players.length + state.bots.length;
+    $('count').textContent = n;
+    $('host-tools').hidden = !me.isHost;
+    $('btn-bot').disabled = n >= 4;
+    $('btn-start').disabled = n < 2;
+    $('lobby-note').textContent = me.isHost
+      ? (n < 2 ? 'Playing alone? Add a practice bot, then start.' : 'Everyone picked? Start the fight.')
+      : 'The host starts the fight when everyone is in.';
+  }
+
+  function renderMe(f) {
+    var box = $('me');
+    box.textContent = '';
+    var h = hero(f.hero);
+    box.style.background = '#fff';
+    box.style.borderColor = '#1E1B2E';
+    var left = el('div');
+    left.appendChild(el('div', 'who', h.name));
+    left.appendChild(el('div', 'sub', f.name + ' · ' + h.title));
+    var stats = el('div', 'row');
+    var hp = el('div', 'stat'); hp.appendChild(el('b', '', f.hp)); hp.appendChild(el('span', '', 'HEALTH'));
+    var cp = el('div', 'stat'); cp.appendChild(el('b', '', f.cp)); cp.appendChild(el('span', '', 'CP'));
+    cp.querySelector('b').style.color = '#9A6B00';
+    stats.appendChild(hp); stats.appendChild(cp);
+    box.appendChild(left); box.appendChild(stats);
+    var bar = el('div', 'hpbar'); var i = el('i'); i.style.width = Math.max(0, Math.round(100 * f.hp / f.maxHp)) + '%';
+    i.style.background = h.color; bar.appendChild(i); box.appendChild(bar);
+    var chips = el('div', 'chips'); tokenChips(f, chips); box.appendChild(chips);
+  }
+
+  function renderFoes(mine) {
+    var box = $('foes');
+    box.textContent = '';
+    state.fighters.forEach(function (f) {
+      if (f.id === mine.id) return;
+      var row = el('div', 'foe' + (f.alive ? '' : ' out') + (f.id === state.activeId ? ' now' : ''));
+      var dot = el('span', 'dot'); dot.style.background = hero(f.hero).color; row.appendChild(dot);
+      var nm = el('div', 'fn', hero(f.hero).name);
+      nm.appendChild(el('small', '', f.name + (f.bot ? ' · bot' : '') + (f.connected ? '' : ' · away')));
+      row.appendChild(nm);
+      row.appendChild(el('span', 'fh', f.alive ? f.hp : 'KO'));
+      row.appendChild(el('span', 'fc', f.cp + ' CP · ' + f.cards + ' cards'));
+      var chips = el('div', 'chips'); tokenChips(f, chips); row.appendChild(chips);
+      box.appendChild(row);
+    });
+  }
+
+  function renderGame() {
+    show('game');
+    var mine = fighter(me.fighterId);
+    if (!mine) {
+      $('turn').className = 'turn wait';
+      $('turn').textContent = 'Fight in progress. You join the next one.';
+      $('me').hidden = true; $('hand').textContent = ''; $('actions').textContent = '';
+      return;
+    }
+    $('me').hidden = false;
+    renderMe(mine);
+    renderFoes(mine);
+
+    var act = fighter(state.activeId);
+    var myTurn = act && act.id === mine.id && mine.alive;
+    var d = state.dice;
+    var defending = state.step === 'defend' && state.pending && state.pending.defenderId === mine.id;
+
+    // Turn banner
+    var tb = $('turn');
+    tb.textContent = '';
+    if (!mine.alive) { tb.className = 'turn wait'; tb.textContent = 'Knocked out. Cheer from the sidelines.'; }
+    else if (defending) {
+      var att = fighter(state.pending.attackerId);
+      tb.className = 'turn hit';
+      tb.appendChild(document.createTextNode(att.name + ' hits you with ' + state.pending.ability + '!'));
+      tb.appendChild(el('small', '', state.pending.dmg + ' damage incoming' + (state.pending.dodge ? ', but you dodged with Airborne!' : '. Roll to defend.')));
+    } else if (myTurn) {
+      tb.className = 'turn mine';
+      var sub = state.step === 'main1' ? (state.skipRoll ? 'You are Drained: no roll this turn.' : 'Play cards or upgrades, then roll.')
+        : state.step === 'roll' ? 'Tap dice to keep them, roll again, then pick an attack.'
+        : state.step === 'defend' ? 'Waiting for ' + fighter(state.pending.defenderId).name + ' to defend.'
+        : 'Play cards, then end your turn.';
+      tb.appendChild(document.createTextNode('Your turn'));
+      tb.appendChild(el('small', '', sub));
+    } else {
+      tb.className = 'turn wait';
+      tb.appendChild(document.createTextNode((act ? act.name + ' (' + hero(act.hero).name + ')' : '…') + "'s turn"));
+      if (state.step === 'defend') tb.appendChild(el('small', '', fighter(state.pending.defenderId).name + ' is defending.'));
+    }
+
+    // Peek from Seismic Sense
+    $('peek').hidden = !me.peek;
+    if (me.peek) $('peek').textContent = me.peek.name + ' is holding: ' + (me.peek.cards.join(', ') || 'nothing');
+
+    // Dice
+    var zone = $('dice-zone');
+    zone.hidden = !d;
+    if (d) {
+      var owner = fighter(d.owner);
+      var canKeep = myTurn && state.step === 'roll' && d.rolled && !d.done;
+      var box = $('dice');
+      box.textContent = '';
+      d.values.forEach(function (v, i) {
+        var b = dieEl(owner.hero, v, 'button');
+        if (d.kept[i] && d.kind === 'offense' && !d.done) b.className += ' kept';
+        if (d.rolled !== lastRoll && v) b.className += ' rolling';
+        b.disabled = !canKeep;
+        b.setAttribute('aria-label', 'Die ' + (i + 1) + ': ' + v + (d.kept[i] ? ', kept' : ''));
+        b.addEventListener('click', function () { send('smash:keep', { i: i }); });
+        box.appendChild(b);
+      });
+      lastRoll = d.rolled;
+      $('dice-hint').textContent = d.kind === 'defense'
+        ? owner.name + "'s defense"
+        : (owner.id === mine.id ? (d.done ? '' : (d.rolled ? d.rollsLeft + ' roll' + (d.rollsLeft === 1 ? '' : 's') + ' left · glowing dice are kept' : d.rollsLeft + ' rolls')) : owner.name + ' is rolling');
+    }
+
+    // Action buttons
+    var acts = $('actions');
+    acts.textContent = '';
+    function btn(label, cls, ev, disabled) {
+      var b = el('button', 'wide ' + (cls || ''), label);
+      b.disabled = !!disabled || busy;
+      b.addEventListener('click', function () {
+        busy = true;
+        send(ev, {}, function () { busy = false; render(); });
+      });
+      acts.appendChild(b);
+      return b;
+    }
+    if (defending && d) {
+      if (!d.rolled) btn('Roll defense', 'teal', 'smash:defRoll');
+      else btn('Take the hit', '', 'smash:defAccept');
+    }
+    if (myTurn) {
+      if (state.step === 'main1') {
+        if (!state.skipRoll) btn('Roll the dice', '', 'smash:toRoll');
+        btn('End turn', 'ghost', 'smash:end');
+      } else if (state.step === 'roll') {
+        if (!d.rolled) btn('Roll', '', 'smash:roll');
+        else {
+          if (d.rollsLeft > 0) btn('Roll again (' + d.rollsLeft + ' left)', 'teal', 'smash:roll');
+          btn('No attack this turn', 'ghost', 'smash:pass');
+        }
+      } else if (state.step === 'main2') {
+        btn('End turn', '', 'smash:end');
+      }
+    }
+
+    // Abilities during my roll
+    var abBox = $('abilities');
+    abBox.hidden = !(myTurn && state.step === 'roll' && d && d.rolled);
+    if (!abBox.hidden) {
+      abBox.textContent = '';
+      abBox.appendChild(el('p', 'eyebrow', 'Pick an attack'));
+      renderAbilityList(abBox, mine, true);
+    }
+    renderAbilityList($('board-list'), mine, false);
+
+    // Hand
+    $('cp-hint').textContent = mine.cp + ' CP to spend' + (me.hand.length > 6 ? ' · over the 6-card limit, sell some' : '');
+    var hand = $('hand');
+    hand.textContent = '';
+    me.hand.forEach(function (c) {
+      var card = el('div', 'card' + (c.type === 'upgrade' ? ' upgrade' : ''));
+      var top = el('div', 'top');
+      top.appendChild(el('span', 'kind', c.type));
+      top.appendChild(el('span', 'cost', c.cost + ' CP'));
+      card.appendChild(top);
+      card.appendChild(el('div', 'cn', c.name));
+      card.appendChild(el('div', 'ct', c.text));
+      card.appendChild(el('div', 'why', c.why || ''));
+      var btns = el('div', 'btns');
+      var play = el('button', 'small', 'Play');
+      play.disabled = !!c.why || busy;
+      play.addEventListener('click', function () { startCard(c); });
+      var sell = el('button', 'small ghost', 'Sell');
+      sell.disabled = !myTurn || busy;
+      sell.setAttribute('aria-label', 'Sell ' + c.name + ' for 1 CP');
+      sell.addEventListener('click', function () { send('smash:sell', { i: c.i }); });
+      btns.appendChild(play); btns.appendChild(sell);
+      card.appendChild(btns);
+      hand.appendChild(card);
+    });
+    if (!me.hand.length) hand.appendChild(el('p', 'note', 'No cards in hand.'));
+
+    var ev = $('event');
+    ev.hidden = !state.event;
+    if (state.event) ev.textContent = state.event.text;
+
+    if (sheet) refreshSheet();
+  }
+
+  function renderAbilityList(box, mine, pickable) {
+    if (!pickable) box.textContent = '';
+    var h = hero(mine.hero);
+    var q = {};
+    (state.qualifying || []).forEach(function (x) { q[x.id] = x; });
+    var list = h.abilities.concat([h.ultimate]);
+    list.forEach(function (a) {
+      var isUlt = a.id === h.ultimate.id;
+      var on = pickable && !!q[a.id];
+      var b = el(pickable ? 'button' : 'div', 'ab panel' + (isUlt ? ' ult' : '') + (on ? ' on' : ''));
+      var name = el('b', '', (isUlt ? 'Ultimate: ' : '') + a.name);
+      var lvl = (mine.upgrades && mine.upgrades[a.id]) || 1;
+      if (lvl > 1) name.appendChild(el('span', 'lv', 'II'));
+      b.appendChild(name);
+      b.appendChild(el('em', '', a.need));
+      b.appendChild(el('span', '', abilityText(mine, a)));
+      if (pickable) {
+        b.disabled = !on || busy;
+        b.addEventListener('click', function () { startAttack(mine, a); });
+      }
+      box.appendChild(b);
+    });
+    if (!pickable) {
+      var dfn = h.defense;
+      var dv = el('div', 'ab panel');
+      var nm = el('b', '', 'Defense: ' + dfn.name);
+      if (mine.upgrades && mine.upgrades[dfn.id]) nm.appendChild(el('span', 'lv', 'II'));
+      dv.appendChild(nm); dv.appendChild(el('em', '', ''));
+      dv.appendChild(el('span', '', dfn.text[((mine.upgrades && mine.upgrades[dfn.id]) || 1) - 1]));
+      box.appendChild(dv);
+      if (h.wildNote) box.appendChild(el('p', 'note', h.wildNote));
+    }
+  }
+
+  // ---------------------------------------------------------------- bottom sheet
+  function openSheet(s) { sheet = s; $('sheet-bg').hidden = false; refreshSheet(); }
+  function closeSheet() { sheet = null; $('sheet-bg').hidden = true; }
+  $('sheet-cancel').addEventListener('click', closeSheet);
+  $('sheet-bg').addEventListener('click', function (e) { if (e.target === this) closeSheet(); });
+
+  function choiceRow(parent, options, isOn, onPick) {
+    var row = el('div', 'choices');
+    options.forEach(function (o) {
+      var b = el('button', 'ghost', o.label);
+      b.setAttribute('aria-pressed', isOn(o) ? 'true' : 'false');
+      if (o.style) Object.keys(o.style).forEach(function (k) { b.style[k] = o.style[k]; });
+      b.addEventListener('click', function () { onPick(o); refreshSheet(); });
+      row.appendChild(b);
+    });
+    parent.appendChild(row);
+  }
+
+  function aliveFoes(mine) {
+    return state.fighters.filter(function (f) { return f.alive && f.id !== mine.id; });
+  }
+
+  // Attack sheet: target, options, Might.
+  function startAttack(mine, a) {
+    var foes = aliveFoes(mine);
+    var s = { kind: 'attack', a: a, mine: mine, target: foes.length === 1 ? foes[0].id : null, opts: {}, might: 0 };
+    var lvl = (mine.upgrades && mine.upgrades[a.id]) || 1;
+    (a.options || []).forEach(function (o) {
+      if (o.lvl && o.lvl !== lvl) return;
+      if (o.multi) s.opts[o.key] = [];
+      else s.opts[o.key] = o.choices[0].v;
+    });
+    s.lvl = lvl;
+    openSheet(s);
+  }
+
+  // Card sheet: walk through the card's picks.
+  function startCard(c) {
+    var mine = fighter(me.fighterId);
+    if (!c.pick.length) { send('smash:play', { i: c.i, args: {} }); return; }
+    openSheet({ kind: 'card', c: c, mine: mine, step: 0, args: { dice: [], faces: [], target: null, dir: null }, multi: [] });
+  }
+
+  function refreshSheet() {
+    var s = sheet;
+    if (!s || !state || state.phase !== 'play') { closeSheet(); return; }
+    var body = $('sheet-body');
+    body.textContent = '';
+    var ok = $('sheet-ok');
+    ok.hidden = false;
+    ok.disabled = false;
+    var mine = fighter(me.fighterId);
+
+    if (s.kind === 'attack') {
+      if (!(state.step === 'roll' && state.activeId === mine.id)) { closeSheet(); return; }
+      $('sheet-title').textContent = s.a.name;
+      $('sheet-text').textContent = s.a.text[s.lvl - 1] || s.a.text[0];
+      var foes = aliveFoes(mine);
+      if (!s.a.all && foes.length > 1) {
+        body.appendChild(el('p', 'eyebrow', 'Attack who?'));
+        choiceRow(body, foes.map(function (f) { return { v: f.id, label: f.name + ' · ' + hero(f.hero).name + ' (' + f.hp + ')' }; }),
+          function (o) { return s.target === o.v; }, function (o) { s.target = o.v; });
+      } else if (s.a.all) {
+        body.appendChild(el('p', 'note', 'Hits every opponent.'));
+      }
+      (s.a.options || []).forEach(function (o) {
+        if (o.lvl && o.lvl !== s.lvl) return;
+        var max = o.multi ? (s.lvl === 2 ? 2 : 1) : 1;
+        body.appendChild(el('p', 'eyebrow', o.label + (o.multi ? ' · pick ' + max : '')));
+        choiceRow(body, o.choices, function (c) {
+          return o.multi ? s.opts[o.key].indexOf(c.v) >= 0 : s.opts[o.key] === c.v;
+        }, function (c) {
+          if (!o.multi) { s.opts[o.key] = c.v; return; }
+          var arr = s.opts[o.key];
+          var at = arr.indexOf(c.v);
+          if (at >= 0) arr.splice(at, 1);
+          else { arr.push(c.v); while (arr.length > max) arr.shift(); }
+        });
+      });
+      var mightHave = 0;
+      mine.tokens.forEach(function (t) { if (t.id === 'might') mightHave = t.n; });
+      if (mightHave) {
+        body.appendChild(el('p', 'eyebrow', 'Spend Might (+2 dmg each)'));
+        var opts = [];
+        for (var m = 0; m <= mightHave; m++) opts.push({ v: m, label: m === 0 ? 'None' : m + ' (+' + (2 * m) + ')' });
+        choiceRow(body, opts, function (o) { return s.might === o.v; }, function (o) { s.might = o.v; });
+      }
+      ok.textContent = 'Attack!';
+      ok.disabled = (!s.a.all && !s.target) || busy;
+      ok.onclick = function () {
+        var args = { ability: s.a.id, target: s.target, might: s.might };
+        Object.keys(s.opts).forEach(function (k) { args[k] = s.opts[k]; });
+        busy = true;
+        send('smash:attack', args, function (res) { busy = false; if (!res.error) closeSheet(); render(); });
+      };
+      return;
+    }
+
+    // Card
+    var c = s.c;
+    var fresh = me.hand.filter(function (x) { return x.id === c.id; })[0];
+    if (!fresh) { closeSheet(); return; }
+    c.i = fresh.i;
+    $('sheet-title').textContent = c.name;
+    $('sheet-text').textContent = c.text;
+    var step = c.pick[s.step];
+    var d = state.dice;
+    if (!step) { ok.hidden = true; return; }
+    body.appendChild(el('p', 'eyebrow', step.label || ''));
+
+    function finish() {
+      busy = true;
+      send('smash:play', { i: c.i, args: s.args }, function (res) { busy = false; if (!res.error) closeSheet(); render(); });
+    }
+    function next() {
+      s.step++;
+      if (s.step >= c.pick.length) finish();
+      else refreshSheet();
+    }
+
+    if (step.k === 'ownDie' || step.k === 'enemyDie' || step.k === 'ownDice' || step.k === 'enemyDice') {
+      if (!d) { closeSheet(); return; }
+      var owner = fighter(d.owner);
+      var multi = step.k === 'ownDice' || step.k === 'enemyDice';
+      var row = el('div', 'dice');
+      d.values.forEach(function (v, i) {
+        var b = dieEl(owner.hero, v, 'button');
+        if (multi ? s.multi.indexOf(i) >= 0 : s.args.dice.indexOf(i) >= 0) b.className += ' pick';
+        b.setAttribute('aria-label', 'Die ' + (i + 1) + ': ' + v);
+        b.addEventListener('click', function () {
+          if (multi) {
+            var at = s.multi.indexOf(i);
+            if (at >= 0) s.multi.splice(at, 1);
+            else if (s.multi.length < step.max) s.multi.push(i);
+            refreshSheet();
+          } else { s.args.dice.push(i); next(); }
+        });
+        row.appendChild(b);
+      });
+      body.appendChild(row);
+      if (multi) {
+        ok.textContent = 'Reroll ' + s.multi.length;
+        ok.disabled = !s.multi.length;
+        ok.onclick = function () { s.args.dice = s.multi.slice(); next(); };
+      } else ok.hidden = true;
+      return;
+    }
+    if (step.k === 'face') {
+      var who = fighter(d.owner);
+      var row2 = el('div', 'dice');
+      [1, 2, 3, 4, 5, 6].forEach(function (v) {
+        var b = dieEl(who.hero, v, 'button');
+        b.addEventListener('click', function () { s.args.faces.push(v); next(); });
+        row2.appendChild(b);
+      });
+      body.appendChild(row2);
+      ok.hidden = true;
+      return;
+    }
+    if (step.k === 'choice') {
+      choiceRow(body, step.options, function () { return false; }, function (o) { s.args[step.key] = o.v; next(); });
+      ok.hidden = true;
+      return;
+    }
+    if (step.k === 'target') {
+      choiceRow(body, aliveFoes(mine).map(function (f) { return { v: f.id, label: f.name + ' · ' + hero(f.hero).name }; }),
+        function () { return false; }, function (o) { s.args.target = o.v; next(); });
+      ok.hidden = true;
+    }
+  }
+
+  function renderDone() {
+    show('done');
+    var w = fighter(state.winnerId);
+    $('winner').textContent = w ? (w.id === me.fighterId ? 'You win!' : w.name + ' wins') : 'Draw';
+    $('done-note').textContent = (state.event ? state.event.text : '') + (me.isHost ? '' : ' The host can set up a rematch.');
+    $('btn-again').hidden = !me.isHost;
+  }
+})();
+</script>
+</body>
+</html>
