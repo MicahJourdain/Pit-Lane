@@ -159,8 +159,46 @@ console.log('\nv0.3 fixes');
   S.addBot(lnk.code, 't-hk', 'link');
   const t = { name: 'Aang', tokens: { masteryFire: 1, masteryAir: 1 } };
   const notes = [];
-  H2.HEROES.link.abilities.find((a) => a.id === 'hookshot').plan({ lvl: 1, opts: { mode: 'steal' } }).hit({ att: { name: 'Link', tokens: {} } }, t, notes);
+  const hk = H2.HEROES.link.abilities.find((a) => a.id === 'hookshot');
+  hk.plan({ lvl: 1, opts: {} }).preHit({ att: { name: 'Link', tokens: {} } }, t, notes);
   check('Hookshot can no longer take Mastery', [t.tokens.masteryFire, t.tokens.masteryAir], [1, 1]);
+  check('Hookshot needs four Triforce', [hk.match({ dice: [6, 6, 6, 6, 1] }), hk.match({ dice: [1, 2, 3, 6, 6] })], [0, -1]);
+  check('Hookshot does not heal', hk.plan({ lvl: 1, opts: {} }).self, undefined);
+}
+{
+  // Hookshot grabs Air Scooter before it can block.
+  const r = S.create('t-hs', 'L', 'x').room;
+  S.pickHero(r.code, 't-hs', 'link');
+  S.addBot(r.code, 't-hs', 'aang');
+  S.setRng(() => 0.01);
+  S.start(r.code, 't-hs', 0);
+  const aangF = r.fighters.find((f) => f.hero === 'aang');
+  aangF.tokens.airScooter = 1;
+  S.toRoll(r.code, 't-hs', 0);
+  S.setRng(dice(6, 6, 6, 6, 3));
+  S.roll(r.code, 't-hs', 0);
+  S.attack(r.code, 't-hs', { ability: 'hookshot' }, 0);
+  S.setRng(dice(3, 3, 3, 3)); // Aang's defense: no blocks
+  S.tick(r, 1e6); S.tick(r, 2e6);
+  const res = S.publicState(r).result;
+  check('Hookshot steals Air Scooter before it blocks: 8 taken, token gone', [res.hits[0].taken, aangF.tokens.airScooter || 0], [8, 0]);
+}
+{
+  // A 0-damage attack skips the defensive roll.
+  const r = S.create('t-z', 'A', 'x').room;
+  S.pickHero(r.code, 't-z', 'aang');
+  S.addBot(r.code, 't-z', 'link');
+  S.setRng(() => 0.01);
+  S.start(r.code, 't-z', 0);
+  const me = r.fighters.find((f) => f.hero === 'aang');
+  me.hand = ['pocket', 'pocket'];
+  check('selling works before rolling', !!S.sell(r.code, 't-z', 0).room, true);
+  S.toRoll(r.code, 't-z', 0);
+  check('no selling once you start rolling', S.sell(r.code, 't-z', 0).error, 'Cards can only be sold before you roll.');
+  S.setRng(dice(1, 1, 2, 2, 5));
+  S.roll(r.code, 't-z', 0);
+  S.attack(r.code, 't-z', { ability: 'scooter' }, 0);
+  check('Air Scooter (0 dmg): no defensive roll, straight to main phase 2', r.step, 'main2');
 }
 {
   const r = S.create('t-dice', 'D', 'x').room;

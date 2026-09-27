@@ -253,7 +253,7 @@ const aang = {
 
 // ---------------- Link (same layout, tuned against Aang)
 const LT = {
-  slash: [7, 9], hookshot: [4, 5], hammer: [10, 12], bombs: [8, 9],
+  slash: [7, 9], hookshot: [8, 10], hammer: [10, 12], bombs: [11, 13],
   boomerang: [5, 6], spin: [7, 9], bow: [8, 9], ult: 15
 };
 const link = {
@@ -278,19 +278,15 @@ const link = {
       plan: ({ lvl }) => ({ dmg: LT.slash[lvl - 1] })
     },
     {
-      id: 'hookshot', name: 'Hookshot', space: 2, ring: true, slot: 'Rupee', need: '1 Rupee + 2 Sword',
-      get text() { return [`${LT.hookshot[0]} dmg, then choose: take 1 token, or pull in for +3 dmg and heal 3.`, `${LT.hookshot[1]} dmg, take 1 token AND pull in for +3 dmg and heal 3.`]; },
-      options: [{ key: 'mode', lvl: 1, label: 'Hookshot', choices: [{ v: 'steal', label: 'Take a token' }, { v: 'pull', label: '+3 dmg, heal 3' }] }],
-      match: ({ dice }) => yes(count(dice, [1]) >= 1 && count(dice, [2, 3]) >= 2),
-      plan: ({ lvl, opts }) => {
-        const steal = lvl === 2 || opts.mode !== 'pull';
-        const pull = lvl === 2 || opts.mode === 'pull';
-        return {
-          dmg: LT.hookshot[lvl - 1] + (pull ? 3 : 0),
-          hit: (ctx, t, notes) => { if (steal) stealToken(ctx.att, t, notes); },
-          self: ({ att }) => { if (pull) fx.heal(att, 3); }
-        };
-      }
+      id: 'hookshot', name: 'Hookshot', space: 2, ring: true, slot: 'Triforce', need: '4 Triforce (6, 6, 6, 6)',
+      get text() { return [`${LT.hookshot[0]} dmg. First, take 1 token from the target (not Mastery).`, `${LT.hookshot[1]} dmg. First, take up to 2 tokens from the target (not Mastery).`]; },
+      match: ({ dice }) => yes(count(dice, [6]) >= 4),
+      bot: ({ room, att }) => (room.fighters.some((o) => o.alive && o.id !== att.id && STEAL_ORDER.some((k) => fx.has(o, k))) ? 4 : -2),
+      plan: ({ lvl }) => ({
+        dmg: LT.hookshot[lvl - 1],
+        // Grabs the token before damage, so an Air Scooter token can't block this hit.
+        preHit: (ctx, t, notes) => { for (let i = 0; i < lvl; i++) stealToken(ctx.att, t, notes); }
+      })
     },
     {
       id: 'boomerang', name: 'Boomerang', space: 3, need: 'Small straight',
@@ -303,9 +299,9 @@ const link = {
       })
     },
     {
-      id: 'spin', name: 'Spin Attack', space: 4, all: true, need: '4 Triforce (6, 6, 6, 6)',
+      id: 'spin', name: 'Spin Attack', space: 4, all: true, need: '2 Rupee + 2 Triforce (1, 1, 6, 6)',
       get text() { return [`${LT.spin[0]} dmg to every opponent.`, `${LT.spin[1]} dmg to every opponent.`]; },
-      match: ({ dice }) => yes(count(dice, [6]) >= 4),
+      match: ({ dice }) => yes(count(dice, [1]) >= 2 && count(dice, [6]) >= 2),
       plan: ({ lvl }) => ({ dmg: LT.spin[lvl - 1], all: true })
     },
     {
@@ -320,11 +316,11 @@ const link = {
     },
     {
       id: 'bombs', name: 'Bombs', space: 6, ring: true, slot: 'Bomb', need: 'Full house',
-      get text() { return [`${LT.bombs[0]} dmg. You take 3 dmg.`, `Bombchus: ${LT.bombs[1]} dmg, no damage to you.`]; },
+      get text() { return [`${LT.bombs[0]} dmg. You take 3 dmg.`, `Bombchus: ${LT.bombs[1]} dmg. You take 3 dmg.`]; },
       match: ({ dice }) => yes(fullHouse(dice)),
       plan: ({ lvl }) => ({
         dmg: LT.bombs[lvl - 1],
-        self: ({ att }, notes) => { if (lvl === 1) { fx.hurt(att, 3, notes); notes.push(`${att.name} takes 3 from the blast`); } }
+        self: ({ att }, notes) => { fx.hurt(att, 3, notes); notes.push(`${att.name} takes 3 from the blast`); }
       })
     },
     {
@@ -363,7 +359,7 @@ const link = {
     }
   },
   upgrades: [
-    ['slash', 'Master Sword II', 2], ['hookshot', 'Longshot', 2], ['boomerang', 'Boomerang II', 2],
+    ['slash', 'Master Sword II', 2], ['hookshot', 'Longshot', 3], ['boomerang', 'Boomerang II', 2],
     ['spin', 'Great Spin Attack', 3], ['hammer', 'Megaton Hammer II', 3], ['bombs', 'Bombchus', 2],
     ['bow', 'Fairy Bow II', 3], ['shield', 'Mirror Shield', 3]
   ],
@@ -391,7 +387,7 @@ const link = {
 
 // ---------------- Onua (same layout, tuned against Aang)
 const OT = {
-  swipe: [5, 7], rockslide: [5, 6], rockMight: [1, 2], night: [6, 8], grip: [8, 10],
+  swipe: [5, 7], rockslide: [6, 7], rockMight: [1, 2], night: [6, 8], grip: [8, 10],
   tunnel: [6, 8], mask: [3, 4], maskMight: [2, 3], quake: [8, 10], ult: 18
 };
 const onua = {
@@ -539,7 +535,7 @@ const GENERIC = [
 ];
 
 // Hookshot: take the most valuable token. Fairy and Biggoron's Sword come with it.
-// Mastery tokens are earned progress, so the Hookshot can't take them.
+// Only Aang's Mastery tokens can't be taken. Air Scooter can, before Aang uses it.
 const STEAL_ORDER = ['avatarState', 'fairy', 'biggoron', 'burrowed', 'airScooter', 'might'];
 function stealToken(att, t, notes) {
   const tok = STEAL_ORDER.find((k) => fx.has(t, k));
@@ -578,7 +574,7 @@ function deckFor(heroId) {
 // Dice chips shown on each board card (the dice you need).
 const CHIPS = {
   aang: { whip: ['3', '3', '3'], scooter: ['1-2', '1-2', '1-2', '1-2'], flash: ['SM'], fists: ['6', '6', '6', '6'], avalanche: ['4', '4', '4'], dragon: ['5', '5', '5'], combust: ['LG'], energy: ['6', '6', '6', '6', '6'] },
-  link: { slash: ['2-3', '2-3', '2-3'], hookshot: ['1', '2-3', '2-3'], boomerang: ['SM'], spin: ['6', '6', '6', '6'], hammer: ['4-5', '4-5', '4-5', '4-5'], bombs: ['FH'], bow: ['LG'], triforce: ['6', '6', '6', '6', '6'] },
+  link: { slash: ['2-3', '2-3', '2-3'], hookshot: ['6', '6', '6', '6'], boomerang: ['SM'], spin: ['1', '1', '6', '6'], hammer: ['4-5', '4-5', '4-5', '4-5'], bombs: ['FH'], bow: ['LG'], triforce: ['6', '6', '6', '6', '6'] },
   onua: { swipe: ['1-2', '1-2', '1-2'], rockslide: ['3-4', '3-4', '3-4'], tunnel: ['SM'], mask: ['6', '6', '6'], night: ['5', '5', '3-4', '3-4'], grip: ['1-2', '1-2', '1-2', '3-4', '3-4'], quake: ['LG'], nova: ['6', '6', '6', '6', '6'] }
 };
 

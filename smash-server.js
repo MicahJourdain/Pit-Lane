@@ -13,6 +13,7 @@ module.exports = function smash(app, io) {
   app.get('/smash/tv/:code', page('smash-tv.html'));
   app.get('/smash/ui.js', page('smash-ui.js'));   // shared board + HUD drawing
   app.get('/smash/ui.css', page('smash-ui.css'));
+  app.get('/smash/version', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ version: S.VERSION }); });
   // Hero art: flat files like aang-whip.jpg next to this one. Only those names are served.
   app.get('/smash/art/:file', (req, res) => {
     const f = String(req.params.file || '');

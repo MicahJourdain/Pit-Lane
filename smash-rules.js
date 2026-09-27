@@ -5,6 +5,8 @@
 const H = require('./smash-heroes');
 const { HEROES, CARDS, fx } = H;
 
+// Bump this with every update. Every screen shows it at the bottom.
+const VERSION = '0.4';
 const MAX_FIGHTERS = 4;
 const HAND_START = 4;
 const HAND_LIMIT = 6;
@@ -440,7 +442,8 @@ function doAttack(room, f, args, now) {
   room.stepAt = now;
   const label = `${f.name} uses ${plan.name}${plan.note ? ' (' + plan.note + ')' : ''}${plan.dmg ? ' for ' + plan.dmg : ''}`;
 
-  if (plan.pure || plan.all || plan.undefendable) {
+  // No damage (like Air Scooter I): nothing to defend against, so no defensive roll.
+  if (plan.pure || plan.all || plan.undefendable || !(plan.dmg > 0)) {
     const notes = [];
     targets.forEach((t) => landHit(room, f, t, plan, null, notes));
     finishAttack(room, f, plan, notes, label + (targets.length > 1 ? ' on everyone' : ` on ${targets[0].name}`), now);
@@ -489,6 +492,8 @@ function landHit(room, att, t, plan, defRes, notes) {
   let prevented = 0;
   const blocks = []; // what cut the damage, in order: [label, amount]
   const cut = (label, n) => { if (n > 0) { blocks.push([label, n]); dmg -= n; } };
+  // Some hits act before any blocking (the Hookshot grabs a token before it can be used).
+  if (plan.preHit) plan.preHit({ room, att, draw }, t, notes);
   if (!plan.pure) {
     if (defRes && defRes.dodge) cut('Dodged', dmg);
     if (defRes && defRes.prevent) { prevented = Math.min(dmg, defRes.prevent); cut(HEROES[t.hero].defense.name, prevented); }
@@ -588,10 +593,18 @@ function sell(code, token, idx) {
   if (!f || !f.alive) return { error: 'You are not fighting.' };
   if (active(room) !== f) return { error: 'Sell cards on your own turn.' };
   if (!Number.isInteger(idx) || idx < 0 || idx >= f.hand.length) return { error: 'That card is not in your hand.' };
+  // Cards sell for BP only before you start rolling. After that, the only way to
+  // get rid of one is to discard (no BP) when you're over the hand limit.
+  const overLimit = f.hand.length > HAND_LIMIT;
+  if (room.step !== 'main1' && !overLimit) return { error: 'Cards can only be sold before you roll.' };
   const [card] = f.hand.splice(idx, 1);
   f.discard.push(card);
-  fx.cp(f, 1);
-  setEvent(room, `${f.name} sells ${CARDS[card].name} for 1 BP.`, { kind: 'sell' });
+  if (room.step === 'main1') {
+    fx.cp(f, 1);
+    setEvent(room, `${f.name} sells ${CARDS[card].name} for 1 BP.`, { kind: 'sell' });
+  } else {
+    setEvent(room, `${f.name} discards ${CARDS[card].name} (hand limit).`, { kind: 'sell' });
+  }
   return { room };
 }
 
@@ -603,7 +616,7 @@ function endTurn(code, token, now = Date.now()) {
 }
 function doEndTurn(room, f, now) {
   if (room.step !== 'main1' && room.step !== 'main2') return { error: 'Finish your roll first (attack or pass).' };
-  if (f.hand.length > HAND_LIMIT) return { error: `Sell cards down to ${HAND_LIMIT} first (tap Sell on a card).` };
+  if (f.hand.length > HAND_LIMIT) return { error: `Discard down to ${HAND_LIMIT} cards first (tap Discard on a card).` };
   room.fighters.forEach((x) => { x.shield = 0; x.thorns = 0; x.noKnockdown = false; x.noInstants = false; x.peek = null; });
   if (f.sealed) f.sealed = false;
   nextTurn(room, now);
@@ -716,7 +729,7 @@ function botChoose(room, f) {
     const r = planFor(room, f, q.id, {});
     if (r.error) return;
     const a = HEROES[f.hero].abilities.find((x) => x.id === q.id);
-    const extra = a && a.bot ? a.bot({ att: f }) : 0;
+    const extra = a && a.bot ? a.bot({ room, att: f }) : 0;
     const score = r.plan.dmg * (r.plan.all ? opponents(room, f).length : 1) + extra + (q.ult ? 100 : 0);
     if (!best || score > best.score) best = { id: q.id, score };
   });
@@ -801,7 +814,7 @@ function tick(room, now = Date.now()) {
 }
 
 function botEnd(room, f, now) {
-  while (f.hand.length > HAND_LIMIT) { f.discard.push(f.hand.pop()); fx.cp(f, 1); }
+  while (f.hand.length > HAND_LIMIT) f.discard.push(f.hand.pop()); // over the limit after rolling: discard, no BP
   doEndTurn(room, f, now);
 }
 
@@ -833,6 +846,7 @@ function publicState(room) {
     activeId: act ? act.id : null,
     turnNo: room.turnNo,
     step: room.step,
+    handLimit: HAND_LIMIT,
     skipRoll: room.skipRoll,
     dice: room.dice ? { ...room.dice } : null,
     qualifying: room.step === 'roll' ? qualifying(room) : [],
@@ -869,7 +883,7 @@ function privateState(room, token) {
 }
 
 module.exports = {
-  MAX_FIGHTERS, HAND_LIMIT, AWAY_MS, BOT_STEP_MS,
+  VERSION, MAX_FIGHTERS, HAND_LIMIT, AWAY_MS, BOT_STEP_MS,
   rooms, get, create, join, leave, markAway, sweep, cleanName, normalizeCode,
   pickHero, addBot, removeBot, start, rematch,
   toRoll, roll, keep, attack, skipAttack, defRoll, defAccept, sell, endTurn, play,

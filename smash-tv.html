@@ -26,7 +26,6 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); }
   body { font-family: var(--body); font-size: clamp(16px, 1.45vw, 26px); display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
-  .stripe { flex: none; height: 12px; background: linear-gradient(90deg, #F2B544 0 25%, #2A7FD4 25% 50%, #2F8A43 50% 75%, #C8362A 75%); }
   .eyebrow { font-family: var(--label); font-weight: 700; font-size: .85em; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 .5em; }
   .center { flex: 1; display: grid; place-items: center; padding: 40px 20px; text-align: center; }
   .title { font-family: var(--display); font-size: clamp(48px, 6vw, 110px); line-height: .95; margin: 0 0 .3em; }
@@ -54,10 +53,12 @@
 
   /* game: the hero playmat */
   .game { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1vw; padding: 1vw 1.2vw 1.2vw; background: #16122b; color: #f4efe6; min-height: 0; }
-  .game .strip { display: grid; gap: 1.2vw; font-size: .82vw; }
-  .hudbtn { background: #1c1736; border: .15vw solid #2b2450; border-radius: .6vw; padding: .5vw .7vw .6vw; cursor: pointer; text-align: left; font: inherit; color: inherit; position: relative; min-width: 0; }
-  .hudbtn.focus { border-color: #3ee6e0; }
-  .hudbtn .pin { position: absolute; top: -.7vw; right: .8vw; font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .12em; padding: .05vw .6vw; border-radius: 999px; background: #3ee6e0; color: #16122b; }
+  /* HUDs: P1 top-left, P2 top-right (mirrored), P3/P4 on a second row. Full bars meet in the middle. */
+  .game .strip { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8vw 5vw; font-size: .85vw; }
+  .hudbtn { cursor: pointer; position: relative; min-width: 0; padding: .3vw 0 .5vw; border-bottom: .2vw solid transparent; }
+  .hudbtn.focus { border-bottom-color: rgba(62, 230, 224, .55); }
+  .hudbtn .pin { position: absolute; bottom: -.9vw; left: 50%; transform: translateX(-50%); font-family: var(--label); font-weight: 700; font-size: .7vw; letter-spacing: .12em; padding: .05vw .6vw; border-radius: 999px; background: #3ee6e0; color: #16122b; }
+  .strip .ssr-fxpanel { grid-column: 1 / -1; font-size: .9vw; }
   .game .matwrap { font-size: .95vw; min-height: 0; height: 100%; }
   .strip { display: flex; gap: .8vw; }
   .ftr { flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr auto; gap: .1vw .7vw; align-items: center; padding: .5vw .8vw; background: #222E3A; border: .2vw solid #3A4A5A; border-radius: .9vw; color: #F6EAD2; font: inherit; text-align: left; cursor: pointer; position: relative; }
@@ -152,17 +153,58 @@
   .done { flex: 1; display: grid; place-items: center; text-align: center; padding: 30px; }
   .done .win { font-family: var(--display); font-size: clamp(70px, 9vw, 150px); line-height: .95; margin: .1em 0 .2em; }
   .net { position: fixed; right: 14px; bottom: 10px; font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 14px; color: var(--red); }
+
+  /* ---------- Home screens (code entry, lobby, winner): dark arena look ---------- */
+  html, body { background: #0e0b1d; color: #f4efe6; }
+  body { --muted: #b9b0d6; --ink: #f4efe6; }
+  .backdrop { position: fixed; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); z-index: 0; pointer-events: none; }
+  .backdrop img { width: 100%; height: 100%; object-fit: cover; object-position: center 25%; filter: saturate(.9) brightness(.42); }
+  .backdrop::after { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(ellipse at 50% 45%, rgba(14,11,29,.35) 0%, rgba(14,11,29,.85) 60%, #0e0b1d 100%),
+      linear-gradient(180deg, rgba(14,11,29,.2), rgba(14,11,29,.9)); }
+  body.in-game .backdrop { display: none; }
+  #setup, #connecting, #lobby, #done { position: relative; z-index: 1; }
+  .title { font-family: var(--display); letter-spacing: .02em; text-transform: uppercase; color: #fff;
+    text-shadow: 0 .04em 0 #ff4f8b, 0 .08em 0 #3a3163, 0 0 .6em rgba(62,230,224,.35); }
+  .title .r { color: #ffc23d; }
+  .eyebrow { color: #3ee6e0; }
+  .hint { color: #b9b0d6; }
+  .code-input { color: #fff; border-bottom-color: #3ee6e0; }
+  .err { color: #ff6b8b; }
+  .panel { background: rgba(22,18,43,.88); border: .2vw solid #cfe6ff; border-radius: 0; box-shadow: 0 0 0 .1vw #0c0a1c, 0 1vw 3vw rgba(0,0,0,.5); }
+  .codecard { transform: skewX(-8deg); }
+  .codecard > * { transform: skewX(8deg); }
+  .codecard .code { color: #ffc23d; text-shadow: 0 0 .3em rgba(255,194,61,.35); }
+  #qr { border-color: #cfe6ff; border-radius: 0; }
+  .join-text { color: #b9b0d6; }
+  .join-text b { color: #fff; }
+  .slot { gap: 1.1em; padding: .8em 1em; }
+  .slot.open { background: rgba(22,18,43,.45); border: .15vw dashed #5a4f8c; }
+  .slot .face { flex: none; width: 5.2em; height: 5.2em; overflow: hidden; clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); background: #221c3d; display: grid; place-items: center; }
+  .slot .face img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
+  .slot .face span { font-family: var(--display); font-size: 2em; color: #5a4f8c; }
+  .slot .hn { color: #fff; font-size: 2em; text-transform: uppercase; letter-spacing: .02em; }
+  .slot .pn { color: #3ee6e0; }
+  .slot.open .hn { color: #8f86b3; }
+  .slot .bar { height: .4em; margin-top: .45em; width: 9em; background: #7ed98a; clip-path: polygon(0 0, 100% 0, calc(100% - .4em) 100%, 0 100%); }
+  .done .win { text-transform: uppercase; text-shadow: 0 .05em 0 #0c0a1c, 0 0 .5em currentColor; }
+  .done .winart { width: clamp(160px, 16vw, 300px); aspect-ratio: 1; margin: 0 auto .6em; clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); overflow: hidden; border: 0; }
+  .done .winart img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
+  .ver { position: fixed; left: 10px; bottom: 6px; z-index: 30; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; color: rgba(185,176,214,.7); pointer-events: none; }
+  .ver.old { color: #ffc23d; }
   [hidden] { display: none !important; }
   @media (max-width: 820px) { .lobby { grid-template-columns: 1fr; } .slots { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { .die.rolling, .event.fresh { animation: none; } }
 </style>
 </head>
 <body>
-<div class="stripe"></div>
+<div class="backdrop" id="backdrop" aria-hidden="true">
+  <img src="/smash/art/aang-center.jpg" alt=""><img src="/smash/art/link-center.jpg" alt=""><img src="/smash/art/onua-center.jpg" alt="">
+</div>
 
 <section id="setup" class="center" hidden>
   <div>
-    <p class="title">Super Smash Rolls</p>
+    <p class="title">Super Smash <span class="r">Rolls</span></p>
     <p class="eyebrow">Type the game code</p>
     <input id="code-input" class="code-input" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Game code">
     <p class="err" id="setup-error" role="alert"></p>
@@ -172,7 +214,7 @@
 
 <section id="connecting" class="center">
   <div>
-    <p class="title">Super Smash Rolls</p>
+    <p class="title">Super Smash <span class="r">Rolls</span></p>
     <p class="eyebrow" id="connecting-text">Connecting to the game server</p>
     <p class="hint" id="connecting-hint"></p>
   </div>
@@ -180,7 +222,7 @@
 
 <main id="lobby" class="lobby" hidden>
   <div>
-    <p class="title" style="font-size:clamp(40px,4vw,80px)">Super Smash Rolls</p>
+    <p class="title" style="font-size:clamp(40px,4vw,80px)">Super Smash <span class="r">Rolls</span></p>
     <div class="codecard panel">
       <p class="eyebrow">Game code</p>
       <div class="code" id="board-code">----</div>
@@ -223,6 +265,7 @@
 <main id="done" class="done" hidden>
   <div>
     <p class="eyebrow">Fight over</p>
+    <div class="winart" id="win-art"></div>
     <p class="win" id="win-name">—</p>
     <p id="win-text" style="color:var(--muted)"></p>
     <p class="hint">The host can set up a rematch from their phone.</p>
@@ -230,6 +273,7 @@
 </main>
 
 <div class="net" id="net" hidden>Reconnecting</div>
+<div class="ver" id="ver">v0.4</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/smash/ui.js"></script>
@@ -238,7 +282,9 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var screens = ['setup', 'connecting', 'lobby', 'game', 'done'];
-  function show(which) { screens.forEach(function (s) { $(s).hidden = s !== which; }); }
+  var PAGE_VERSION = '0.4';
+  SSR.versionTag(PAGE_VERSION);
+  function show(which) { screens.forEach(function (s) { $(s).hidden = s !== which; }); document.body.classList.toggle('in-game', which === 'game'); }
   if (typeof io === 'undefined') {
     $('connecting-text').textContent = 'Could not reach the game server';
     $('connecting-hint').textContent = 'Check this device is online, then reload the page.';
@@ -328,10 +374,14 @@
       var p = all[i];
       var h = p && p.hero ? s.heroes[p.hero] : null;
       var slot = el('div', 'slot panel' + (p ? '' : ' open'));
-      slot.appendChild(mono(h));
+      var face = el('div', 'face');
+      if (h) { var im = el('img'); im.src = h.art; im.alt = h.name; face.appendChild(im); }
+      else face.appendChild(el('span', '', p ? '?' : '+'));
+      slot.appendChild(face);
       var t = el('div');
-      t.appendChild(el('div', 'hn', p ? (h ? h.name : 'Picking a hero…') : 'Open seat'));
-      if (p) t.appendChild(el('div', 'pn', p.name + ' · ' + p.sub));
+      t.appendChild(el('div', 'hn', p ? (h ? h.name : 'Picking…') : 'Open seat'));
+      t.appendChild(el('div', 'pn', p ? p.name + ' · ' + p.sub : 'Join on your phone'));
+      if (h) t.appendChild(el('div', 'bar'));
       slot.appendChild(t);
       slots.appendChild(slot);
     }
@@ -345,6 +395,7 @@
   };
   var MAT_BG = { aang: ['#1D2B3B', '#3A2419'], link: ['#1C2A20', '#2A2240'], onua: ['#1E2A2E', '#33291E'] };
   var SPACE_CELL = { 1: [1, 1], 2: [2, 1], 3: [4, 1], 4: [5, 1], 5: [1, 2], 6: [2, 2], 7: [4, 2], 8: [5, 2] };
+  var openFx = null;
   var pinned = null, lastCard = null, lastCardN = 0, lastVals = null, lastResultN = 0;
 
   // The last attack, spelled out on the TV.
@@ -504,16 +555,32 @@
 
     var strip = $('strip');
     strip.textContent = '';
-    strip.style.gridTemplateColumns = 'repeat(' + s.fighters.length + ', minmax(0, 1fr))';
+    if (openFx && !fighter(s, openFx.fid)) openFx = null;
+    var n = s.fighters.length;
     s.fighters.forEach(function (x, i) {
-      var b = el('button', 'hudbtn' + (x.id === f.id ? ' focus' : ''));
-      b.type = 'button';
+      var b = el('div', 'hudbtn' + (x.id === f.id ? ' focus' : ''));
+      b.setAttribute('role', 'button');
+      b.tabIndex = 0;
       b.setAttribute('aria-pressed', pinned === x.id ? 'true' : 'false');
       b.setAttribute('aria-label', (pinned === x.id ? 'Unpin ' : 'Show ') + x.name + "'s board on this TV");
-      b.appendChild(SSR.hud(s, x, { playerNo: i + 1 }));
+      b.appendChild(SSR.hud(s, x, {
+        playerNo: i + 1, flip: i % 2 === 1, open: openFx && openFx.fid === x.id ? openFx.id : null,
+        onEffect: function (fid, eid) { openFx = (openFx && openFx.fid === fid && openFx.id === eid) ? null : { fid: fid, id: eid }; renderGame(S); }
+      }));
       if (pinned === x.id) b.appendChild(el('span', 'pin', 'PINNED'));
       b.addEventListener('click', function () { pinned = pinned === x.id ? null : x.id; renderGame(S); });
       strip.appendChild(b);
+      // The token dropdown goes under the row this HUD is in.
+      var rowEnd = Math.min(n - 1, i - (i % 2) + 1);
+      if (i === rowEnd && openFx) {
+        var ofi = s.fighters.findIndex(function (z) { return z.id === openFx.fid; });
+        if (ofi >= i - (i % 2) && ofi <= rowEnd) {
+          var of = s.fighters[ofi];
+          strip.appendChild(SSR.fxPanel(s, of, openFx.id,
+            function (id) { openFx = { fid: of.id, id: id }; renderGame(S); },
+            function () { openFx = null; renderGame(S); }));
+        }
+      }
     });
 
     var mat = $('mat');
@@ -596,7 +663,9 @@
     show('done'); lastCard = null;
     var w = fighter(s, s.winnerId);
     $('win-name').textContent = w ? w.name + ' wins!' : 'Draw!';
-    if (w) $('win-name').style.color = s.heroes[w.hero].color === '#3B3552' ? '#1E1B2E' : s.heroes[w.hero].color;
+    var wa = $('win-art'); wa.textContent = ''; wa.hidden = !w;
+    if (w) { var wim = el('img'); wim.src = s.heroes[w.hero].art; wim.alt = s.heroes[w.hero].name; wa.appendChild(wim); }
+    if (w) $('win-name').style.color = s.heroes[w.hero].color === '#3B3552' ? '#7FD13B' : s.heroes[w.hero].color;
     $('win-text').textContent = w ? 'Playing ' + s.heroes[w.hero].name + '. ' + (s.event ? s.event.text : '') : '';
   }
 })();

@@ -2,11 +2,11 @@
   "name": "pit-lane",
   "version": "1.0.0",
   "private": true,
-  "description": "A race game on your TV, played with your phones.",
+  "description": "Super Smash Rolls: a hero dice battle on your TV, played with your phones.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test-game.js"
+    "test": "node test-smash.js"
   },
   "engines": {
     "node": ">=20"
@@ -16,4 +16,3 @@
     "socket.io": "^4.8.1"
   }
 }
-

@@ -31,7 +31,6 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--paper); color: var(--ink); }
   body { min-height: 100svh; font-family: var(--body); font-size: 16px; line-height: 1.4; -webkit-text-size-adjust: 100%; }
-  .stripe { height: 8px; background: linear-gradient(90deg, #F2B544 0 25%, #2A7FD4 25% 50%, #2F8A43 50% 75%, #C8362A 75%); }
   .banner { background: var(--red); color: #fff; font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; text-align: center; padding: 8px; }
   .wrap { max-width: 560px; margin: 0 auto; padding: 18px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
   .eyebrow { font-family: var(--label); font-weight: 700; font-size: 14px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
@@ -62,6 +61,8 @@
   .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 16px; color: var(--muted); font-family: var(--label); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; }
   .divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--ink); opacity: .2; }
   .panel { background: var(--card); border: 3px solid var(--line); border-radius: 16px; box-shadow: 5px 5px 0 var(--shadow); padding: 14px; }
+  .ver { text-align: center; padding: 18px 0 calc(10px + env(safe-area-inset-bottom, 0px)); font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .14em; color: #8f86b3; }
+  .ver.old { color: #ffc23d; }
   [hidden] { display: none !important; }
 
   /* lobby */
@@ -164,10 +165,21 @@
   .result .xd { display: flex; gap: 6px; margin: 4px 0 8px; }
   .result .xd .die { width: 40px; height: 44px; font-size: 18px; box-shadow: 2px 2px 0 var(--shadow); }
   .result .xd .die small { font-size: 8px; }
-  .huds { display: grid; gap: 10px; margin-bottom: 8px; font-size: 13px; }
-  .hudbtn { display: block; width: 100%; text-align: left; background: #1c1736; border: 2px solid #2b2450; border-radius: 12px; padding: 10px 10px 12px; box-shadow: none; text-transform: none; letter-spacing: normal; font: inherit; color: inherit; min-height: 0; }
-  .hudbtn.mine { border-color: var(--teal); }
-  .hudbtn:active { transform: none; box-shadow: none; }
+  .huds { display: grid; gap: 14px; margin-bottom: 8px; font-size: 12.5px; }
+  .hudbtn { display: block; width: 100%; padding: 4px 0; cursor: pointer; border-radius: 6px; }
+  .hudbtn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+  .huds .ssr-fxpanel { font-size: 13px; margin-top: -4px; }
+  /* Phone-sized HUD: smaller player box and BP pips so bar, BP, tokens and HP fit. */
+  .huds .ssr-hud { column-gap: .4em; }
+  .huds .ssr-hud .plate { max-width: 11.5em; padding: .3em .9em; }
+  .huds .ssr-hud .who { font-size: .68em; letter-spacing: .08em; }
+  .huds .ssr-hud .hero { font-size: 1.5em; }
+  .huds .ssr-hud .bp .pips { gap: .08em; }
+  .huds .ssr-hud .bp .pips span { width: .38em; height: .62em; }
+  .huds .ssr-hud .row { gap: .25em .5em; padding-right: .6em; }
+  .huds .ssr-hud.flip .row { padding-left: .6em; }
+  .huds .ssr-hud .eff { width: 1.9em; height: 1.9em; }
+  .huds .ssr-hud .hp { font-size: 1.2em; }
   .table { margin: 6px 0 14px; }
   .reveal { background: #F6EAD2; color: #1E1B2E; border: 3px solid #E3C98F; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
   .reveal .top { display: flex; justify-content: space-between; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #5E5870; }
@@ -203,7 +215,6 @@
 </style>
 </head>
 <body>
-<div class="stripe"></div>
 <div class="banner" id="offline" hidden>Reconnecting</div>
 
 <div class="wrap">
@@ -242,7 +253,7 @@
 
   <section id="game" hidden>
     <div class="huds ssr" id="huds"></div>
-    <p class="note" id="huds-hint" style="margin:-4px 0 14px">Tap a player to see their board. Tap a token for what it does.</p>
+    <p class="note" id="huds-hint" style="margin:-4px 0 14px">Tap a player's name to see their board. Tap a token to see what it does.</p>
     <div class="turn wait" id="turn">Waiting…</div>
     <div class="result" id="result" hidden></div>
     <div class="peek" id="peek" hidden></div>
@@ -293,6 +304,7 @@
   </div>
 </div>
 
+<div class="ver" id="ver">v0.4</div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/smash/ui.js"></script>
 <script>
@@ -303,6 +315,8 @@ window.addEventListener('error', function (ev) {
 
 (function () {
   var $ = function (id) { return document.getElementById(id); };
+  var PAGE_VERSION = '0.4';
+  SSR.versionTag(PAGE_VERSION);
   if (typeof io === 'undefined') {
     $('entry-error').textContent = 'Could not reach the game server. Check your internet, then reload.';
     $('entry-status').textContent = '';
@@ -689,7 +703,9 @@ window.addEventListener('error', function (ev) {
     renderTable();
 
     // Hand
-    $('cp-hint').textContent = mine.cp + ' BP to spend' + (me.hand.length > 6 ? ' · over the 6-card limit, sell some' : '');
+    var overLimit = me.hand.length > (state.handLimit || 6);
+    var canSell = myTurn && state.step === 'main1';
+    $('cp-hint').textContent = mine.cp + ' BP to spend' + (overLimit ? (canSell ? ' · over the 6-card limit, sell some' : ' · over the 6-card limit, discard some') : (myTurn && !canSell ? ' · cards sell only before you roll' : ''));
     var hand = $('hand');
     hand.textContent = '';
     me.hand.forEach(function (c) {
@@ -705,11 +721,15 @@ window.addEventListener('error', function (ev) {
       var play = el('button', 'small', 'Play');
       play.disabled = !!c.why || busy;
       play.addEventListener('click', function () { startCard(c); });
-      var sell = el('button', 'small ghost', 'Sell');
-      sell.disabled = !myTurn || busy;
-      sell.setAttribute('aria-label', 'Sell ' + c.name + ' for 1 BP');
-      sell.addEventListener('click', function () { send('smash:sell', { i: c.i }); });
-      btns.appendChild(play); btns.appendChild(sell);
+      btns.appendChild(play);
+      // Sell for 1 BP before rolling. After that, Discard shows only when over the hand limit.
+      if (canSell || (myTurn && overLimit)) {
+        var sell = el('button', 'small ghost', canSell ? 'Sell' : 'Discard');
+        sell.disabled = busy;
+        sell.setAttribute('aria-label', canSell ? 'Sell ' + c.name + ' for 1 BP' : 'Discard ' + c.name);
+        sell.addEventListener('click', function () { send('smash:sell', { i: c.i }); });
+        btns.appendChild(sell);
+      }
       card.appendChild(btns);
       hand.appendChild(card);
     });
@@ -757,19 +777,31 @@ window.addEventListener('error', function (ev) {
     if (r.selfChange) box.appendChild(el('p', 'note', (att.id === mine.id ? 'You ' : att.name + ' ') + (r.selfChange > 0 ? 'healed ' + r.selfChange : 'took ' + (-r.selfChange)) + ' from the move itself.'));
   }
 
-  // HUD Slash bar for every player. Tap the bar for their board, a token for details.
+  // HUD Slash for every player, stacked. Odd players on the left, even players mirrored
+  // on the right. Tap a HUD for that player's board; tap a token for a dropdown.
+  var openFx = null; // { fid, id } of the token dropdown that's open
   function renderHuds(mine) {
     var box = $('huds');
     box.textContent = '';
+    if (openFx && !fighter(openFx.fid)) openFx = null;
     state.fighters.forEach(function (f, i) {
       var b = el('div', 'hudbtn' + (f.id === mine.id ? ' mine' : ''));
       b.setAttribute('role', 'button');
       b.tabIndex = 0;
       b.setAttribute('aria-label', "Show " + f.name + "'s board");
-      b.appendChild(SSR.hud(state, f, { playerNo: i + 1, you: f.id === mine.id, onEffect: function (fid, eid) { openSheet({ kind: 'fx', fid: fid, sel: eid }); } }));
+      var open = openFx && openFx.fid === f.id ? openFx.id : null;
+      b.appendChild(SSR.hud(state, f, {
+        playerNo: i + 1, you: f.id === mine.id, flip: i % 2 === 1, open: open,
+        onEffect: function (fid, eid) { openFx = (openFx && openFx.fid === fid && openFx.id === eid) ? null : { fid: fid, id: eid }; renderHuds(mine); }
+      }));
       b.addEventListener('click', function () { openSheet({ kind: 'board', fid: f.id }); });
-      b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSheet({ kind: 'board', fid: f.id }); } });
+      b.addEventListener('keydown', function (e) { if (e.target === b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSheet({ kind: 'board', fid: f.id }); } });
       box.appendChild(b);
+      if (open) {
+        box.appendChild(SSR.fxPanel(state, f, open,
+          function (id) { openFx = { fid: f.id, id: id }; renderHuds(mine); },
+          function () { openFx = null; renderHuds(mine); }));
+      }
     });
   }
 

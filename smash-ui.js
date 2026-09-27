@@ -170,17 +170,21 @@
   }
 
   // ---------------------------------------------------------------- HUD 1 (HUD Slash)
+  // opts.flip mirrors it (player box on the right, bar drains toward the right edge),
+  // so two HUDs side by side have full bars meeting in the middle.
+  // opts.open = the effect id whose dropdown is open (draws that token as selected).
   function hud(s, f, opts) {
     opts = opts || {};
     var h = s.heroes[f.hero];
     var defId = s.pending ? s.pending.defenderId : null;
-    var root = el('div', 'ssr-hud' + (!f.alive ? ' is-out' : f.id === defId ? ' is-def' : f.id === s.activeId ? ' is-turn' : ''));
+    var root = el('div', 'ssr-hud' + (opts.flip ? ' flip' : '') + (!f.alive ? ' is-out' : f.id === defId ? ' is-def' : f.id === s.activeId ? ' is-turn' : '') + (opts.you ? ' is-you' : ''));
+
     var plate = el('div', 'plate');
     var inner = el('div');
     var who = el('div', 'who');
     var sq = el('i'); sq.style.background = f.color || '#3ee6e0'; who.appendChild(sq);
-    who.appendChild(document.createTextNode('P' + (opts.playerNo || '') + ' · ' + f.name.toUpperCase() + (opts.you ? ' (YOU)' : '') + (f.bot ? ' · BOT' : '') + (f.connected ? '' : ' · AWAY')));
-    if (f.alive && f.id === defId) who.appendChild(el('span', 'tg d', '◆ DEFENDING'));
+    who.appendChild(el('span', 'nmx', 'P' + (opts.playerNo || '') + ' · ' + f.name.toUpperCase() + (opts.you ? ' (YOU)' : '') + (f.bot ? ' · BOT' : '') + (f.connected ? '' : ' · AWAY')));
+    if (f.alive && f.id === defId) who.appendChild(el('span', 'tg d', '◆ DEFEND'));
     else if (f.alive && f.id === s.activeId) who.appendChild(el('span', 'tg', '▶ TURN'));
     inner.appendChild(who);
     inner.appendChild(el('div', 'hero', h.name.toUpperCase()));
@@ -192,75 +196,100 @@
     if (s.result) s.result.hits.forEach(function (x) { if (x.targetId === f.id) hit = x.taken; });
     var bar = el('div', 'bar'); var bi = el('div');
     var fill = el('div', 'fill'); fill.style.width = pct + '%';
-    fill.style.background = pct > 50 ? '#5ee07a' : pct > 25 ? '#ffd23d' : '#ff4d5e';
+    fill.style.background = pct > 50 ? '#7ed98a' : pct > 25 ? '#ffd23d' : '#ff4d5e';
     var ghost = el('div', 'ghost'); ghost.style.width = Math.min(hit, f.maxHp - Math.max(0, f.hp)) / f.maxHp * 100 + '%';
     bi.appendChild(fill); bi.appendChild(ghost); bar.appendChild(bi);
     root.appendChild(bar);
 
+    // Under the bar: BP, then tokens, then HP.
     var row = el('div', 'row');
-    var bp = el('div', 'bp'); bp.appendChild(document.createTextNode('BP'));
+    var bp = el('div', 'bp'); bp.appendChild(el('span', 'k', 'BP'));
     var pips = el('div', 'pips');
     for (var i = 0; i < 15; i++) pips.appendChild(el('span', i < f.cp ? 'on' : ''));
-    bp.appendChild(pips); bp.appendChild(document.createTextNode(f.cp));
+    bp.appendChild(pips); bp.appendChild(el('span', 'v', f.cp));
     row.appendChild(bp);
+
+    var fx = el('div', 'fx');
+    effects(s, f).forEach(function (e) {
+      var b = el('button', 'eff k-' + e.kind + (opts.open === e.id ? ' sel' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-label', e.name + (e.count > 1 ? ' ×' + e.count : '') + '. Show what it does');
+      b.setAttribute('aria-expanded', opts.open === e.id ? 'true' : 'false');
+      b.title = e.name;
+      b.appendChild(el('div', 'g', e.glyph));
+      if (e.count > 1 || e.max > 1) b.appendChild(el('span', 'ct', e.count));
+      if (opts.onEffect) b.addEventListener('click', function (ev) { ev.stopPropagation(); opts.onEffect(f.id, e.id); });
+      fx.appendChild(b);
+    });
+    fx.appendChild(el('span', 'cards', f.cards + (f.cards === 1 ? ' CARD' : ' CARDS')));
+    row.appendChild(fx);
+
     var hp = el('div', 'hp', f.alive ? String(f.hp) : 'KO');
     hp.appendChild(el('small', '', ' / ' + f.maxHp));
     row.appendChild(hp);
     root.appendChild(row);
-
-    var fx = el('div', 'fx');
-    var list = effects(s, f);
-    if (!list.length) fx.appendChild(el('span', 'none', 'NO TOKENS'));
-    list.forEach(function (e) {
-      var b = el('button', 'eff ' + e.kind);
-      b.type = 'button';
-      b.setAttribute('aria-label', e.name + (e.count > 1 ? ' ×' + e.count : ''));
-      b.title = e.name + ': ' + e.text;
-      b.appendChild(el('div', 'g', e.glyph));
-      if (e.count > 1 || e.max > 1) b.appendChild(el('span', 'ct', e.count));
-      if (opts.onEffect) b.addEventListener('click', function (ev) { ev.stopPropagation(); opts.onEffect(f.id, e.id); });
-      else b.tabIndex = -1;
-      fx.appendChild(b);
-    });
-    fx.appendChild(el('span', 'none', f.cards + ' CARDS'));
-    root.appendChild(fx);
     return root;
   }
 
+  // The dropdown under a HUD when a token is tapped.
   function fxPanel(s, f, selId, onPick, onClose) {
     var list = effects(s, f);
     var sel = list.filter(function (e) { return e.id === selId; })[0] || list[0];
     var p = el('div', 'ssr-fxpanel');
+    if (onClose) {
+      var x = el('button', 'close', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
+      x.addEventListener('click', function (ev) { ev.stopPropagation(); onClose(); });
+      p.appendChild(x);
+    }
     if (sel) {
       var top = el('div', 'top');
-      top.appendChild(el('div', 'big ' + sel.kind, sel.glyph));
+      top.appendChild(el('div', 'big k-' + sel.kind, sel.glyph));
       var t = el('div');
       var nm = el('div', 'nm', sel.name);
-      t.appendChild(nm);
-      var kd = el('div', 'kd', (sel.kind === 'tok' ? 'TOKEN' : 'STATUS') + ' · ' + (sel.max > 1 ? sel.count + ' / ' + sel.max : '×' + sel.count));
+      var kd = el('span', 'kd', (sel.kind === 'tok' ? 'TOKEN' : 'STATUS') + ' · ' + (sel.max > 1 ? sel.count + ' / ' + sel.max : '×' + sel.count));
       kd.style.color = sel.kind === 'tok' ? '#3ee6e0' : '#ff6b8b';
-      t.appendChild(kd);
+      nm.appendChild(kd);
+      t.appendChild(nm);
       t.appendChild(el('div', 'tx', sel.text));
       top.appendChild(t);
       p.appendChild(top);
     }
-    var l = el('div', 'list');
-    l.appendChild(el('div', 'lab', 'ALL OF ' + f.name.toUpperCase() + "'S EFFECTS"));
-    if (!list.length) l.appendChild(el('div', 'tx', 'Nothing right now.'));
-    list.forEach(function (e) {
-      if (sel && e.id === sel.id) return;
-      var b = el('button', 'li'); b.type = 'button';
-      b.appendChild(el('div', 'big ' + e.kind, e.glyph));
-      var t = el('div');
-      t.appendChild(el('div', 'nm', e.name)); t.lastChild.style.fontSize = '1.05em';
-      t.appendChild(el('div', 'tx', e.text)); t.lastChild.style.fontSize = '.95em';
-      b.appendChild(t);
-      b.addEventListener('click', function () { onPick(e.id); });
-      l.appendChild(b);
-    });
-    p.appendChild(l);
+    var others = list.filter(function (e) { return !sel || e.id !== sel.id; });
+    if (others.length) {
+      var l = el('div', 'list');
+      l.appendChild(el('div', 'lab', 'ALL OF ' + f.name.toUpperCase() + "'S EFFECTS"));
+      others.forEach(function (e) {
+        var b = el('button', 'li'); b.type = 'button';
+        b.appendChild(el('div', 'big k-' + e.kind, e.glyph));
+        var t = el('div');
+        var nm = el('div', 'nm2', e.name);
+        var kd = el('span', 'kd', (e.kind === 'tok' ? 'TOKEN' : 'STATUS') + ' · ' + (e.max > 1 ? e.count + ' / ' + e.max : '×' + e.count));
+        kd.style.color = e.kind === 'tok' ? '#3ee6e0' : '#ff6b8b';
+        nm.appendChild(kd);
+        t.appendChild(nm);
+        t.appendChild(el('div', 'tx2', e.text));
+        b.appendChild(t);
+        b.addEventListener('click', function (ev) { ev.stopPropagation(); onPick(e.id); });
+        l.appendChild(b);
+      });
+      p.appendChild(l);
+    }
     return p;
   }
 
-  window.SSR = { board: board, hud: hud, fxPanel: fxPanel, effects: effects, chip: chip, textOn: textOn };
+  // Version tag at the bottom of every screen. Turns gold with a reload hint if any
+  // piece (this page, the shared UI file, or the server) is out of date.
+  var VERSION = '0.4';
+  function versionTag(pageVersion) {
+    var tag = document.getElementById('ver');
+    if (!tag) return;
+    tag.textContent = 'v' + pageVersion;
+    fetch('/smash/version', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+      var ok = j.version === pageVersion && VERSION === pageVersion;
+      tag.textContent = ok ? 'v' + pageVersion : 'v' + pageVersion + ' · server v' + j.version + ' · reload the page';
+      tag.classList.toggle('old', !ok);
+    }).catch(function () {});
+  }
+
+  window.SSR = { board: board, hud: hud, fxPanel: fxPanel, effects: effects, chip: chip, textOn: textOn, version: VERSION, versionTag: versionTag };
 })();
