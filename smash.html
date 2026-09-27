@@ -170,6 +170,8 @@
   .hudbtn { display: block; width: 100%; padding: 4px 0; cursor: pointer; border-radius: 6px; }
   .hudbtn:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
   .huds .ssr-fxpanel { font-size: 13px; margin-top: -4px; }
+  .huds .ssr-fxpanel .facts { grid-template-columns: 1fr; gap: .1em; }
+  .huds .ssr-fxpanel .facts dd { margin-bottom: .5em; }
   /* Phone-sized HUD: smaller player box and BP pips so bar, BP, tokens and HP fit. */
   .huds .ssr-hud { column-gap: .4em; }
   .huds .ssr-hud .plate { max-width: 11.5em; padding: .3em .9em; }
@@ -191,8 +193,6 @@
   .tvtoggle input { width: 22px; height: 22px; padding: 0; }
   .sheet .ssr { font-size: 13px; }
   .peek { background: #14303a; border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 14px; }
-  details.board { margin: 16px 0; }
-  details.board summary { font-family: var(--label); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; padding: 10px 0; min-height: 44px; }
 
   /* sheet */
   .sheet-bg { position: fixed; inset: 0; background: rgba(30,27,46,.5); z-index: 10; display: flex; align-items: flex-end; justify-content: center; }
@@ -254,7 +254,7 @@
 
   <section id="game" hidden>
     <div class="huds ssr" id="huds"></div>
-    <p class="note" id="huds-hint" style="margin:-4px 0 14px">Tap a player's name to see their board. Tap a token to see what it does.</p>
+    <p class="note" id="huds-hint" style="margin:-4px 0 14px">Tap anyone's HUD to see their hero board. Tap a token to see what it does, if it can be stolen, and when it's used.</p>
     <div class="turn wait" id="turn">Waiting…</div>
     <div class="result" id="result" hidden></div>
     <div class="peek" id="peek" hidden></div>
@@ -272,10 +272,6 @@
       <div class="reveal" id="reveal" hidden></div>
       <ul class="log" id="log"></ul>
     </section>
-    <details class="board" id="board">
-      <summary>Your hero board</summary>
-      <div class="ssr" id="board-list" style="font-size:13px"></div>
-    </details>
     <label class="tvtoggle"><input type="checkbox" id="phone-only"> Show the whole table on my phone (no TV)</label>
   </section>
 
@@ -305,7 +301,7 @@
   </div>
 </div>
 
-<div class="ver" id="ver">v0.5</div>
+<div class="ver" id="ver">v0.6</div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/smash/ui.js"></script>
 <script>
@@ -316,7 +312,7 @@ window.addEventListener('error', function (ev) {
 
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var PAGE_VERSION = '0.5';
+  var PAGE_VERSION = '0.6';
   SSR.versionTag(PAGE_VERSION);
   if (typeof io === 'undefined') {
     $('entry-error').textContent = 'Could not reach the game server. Check your internet, then reload.';
@@ -405,7 +401,6 @@ window.addEventListener('error', function (ev) {
   });
   $('btn-bot').addEventListener('click', function () { send('smash:addBot', {}); });
   $('phone-only').addEventListener('change', function () { store.set('phoneOnly', this.checked ? 'on' : 'off'); render(); });
-  $('board').addEventListener('toggle', function () { render(); });
   $('btn-start').addEventListener('click', function () { send('smash:start'); });
   $('btn-again').addEventListener('click', function () { send('smash:rematch'); });
 
@@ -699,8 +694,6 @@ window.addEventListener('error', function (ev) {
       abBox.appendChild(el('p', 'eyebrow', 'Pick an attack'));
       renderAbilityList(abBox, mine, true);
     }
-    var bl = $('board-list');
-    if ($('board').open) { bl.textContent = ''; bl.appendChild(SSR.board(state, mine, { compact: true })); }
     renderTable();
 
     // Hand

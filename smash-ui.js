@@ -52,30 +52,55 @@
   }
 
   // Everything a fighter carries: tokens first, then statuses.
+  var NO_STEAL = 'No. Statuses stay until they wear off.';
   var STATUS = {
-    burn: { name: 'Burn', text: 'At your upkeep take 2 damage per stack, then remove.' },
-    knockdown: { name: 'Knocked Down', text: 'Your next offensive roll gets 2 rolls instead of 3.' },
-    frozen: { name: 'Frozen', text: 'Your next defense rolls 1 fewer die.' },
-    shield: { name: 'Shield', text: 'Prevents this much damage from the next attack this turn.' },
-    sealed: { name: 'Ultimate sealed', text: "Can't use your Ultimate until the end of your next turn." }
+    burn: { name: 'Burn', text: 'Take 2 damage for each stack (up to 3 stacks).', when: 'At the start of your turn, then all stacks are removed. Shake It Off or Tea with Iroh clears it.' },
+    knockdown: { name: 'Knocked Down', text: 'Your offensive roll gets 2 rolls instead of 3.', when: 'Your next offensive roll, then it wears off.' },
+    frozen: { name: 'Frozen', text: 'Your defense rolls 1 fewer die.', when: 'The next time you roll defense, then it wears off.' },
+    shield: { name: 'Shield', text: 'Prevents this much damage.', when: 'The next attack on you this turn. Leftover shield is gone at the end of the turn.' },
+    sealed: { name: 'Ultimate sealed', text: "You can't use your Ultimate.", when: 'Until the end of your next turn.' }
   };
-  function glyph(name) {
+  var GLYPH = { avatarState: 'AV', airScooter: 'AS', weaponUp: 'WU', hammerLock: 'HL', knockdown: 'KD' };
+  function glyph(name, id) {
+    if (id && GLYPH[id]) return GLYPH[id];
     var w = name.replace(/[^A-Za-z ]/g, '').split(' ').filter(Boolean);
     return (w.length > 1 ? w[0][0] + w[1][0] : name.slice(0, 2)).toUpperCase();
   }
+  // Everything to show for a fighter: their hero's token slots (even at 0, so you can
+  // tap them and learn what they do), any other tokens they hold, then statuses.
   function effects(s, f) {
     var out = [];
-    f.tokens.forEach(function (t) {
-      var info = s.tokenInfo[t.id];
-      out.push({ id: t.id, kind: 'tok', name: info.name, text: info.text, count: t.n, max: info.max, glyph: glyph(info.name) });
+    var have = {};
+    f.tokens.forEach(function (t) { have[t.id] = t.n; });
+    var slots = ((s.heroes[f.hero] || {}).tokenSlots || []).slice();
+    f.tokens.forEach(function (t) { if (slots.indexOf(t.id) < 0) slots.push(t.id); });
+    slots.forEach(function (id) {
+      var info = s.tokenInfo[id];
+      if (!info) return;
+      var n = have[id] || 0;
+      out.push({ id: id, kind: 'tok', name: info.name, text: info.text, count: n, max: info.max, empty: !n,
+        when: info.when, steal: info.stealNote, glyph: glyph(info.name, id) });
     });
-    if (f.status.burn) out.push({ id: 'burn', kind: 'sts', name: STATUS.burn.name, text: STATUS.burn.text, count: f.status.burn });
-    if (f.status.knockdown) out.push({ id: 'knockdown', kind: 'sts', name: STATUS.knockdown.name, text: STATUS.knockdown.text, count: 1 });
-    if (f.status.frozen) out.push({ id: 'frozen', kind: 'sts', name: STATUS.frozen.name, text: STATUS.frozen.text, count: 1 });
-    if (f.shield) out.push({ id: 'shield', kind: 'sts', name: STATUS.shield.name, text: STATUS.shield.text, count: f.shield });
-    if (f.sealed) out.push({ id: 'sealed', kind: 'sts', name: STATUS.sealed.name, text: STATUS.sealed.text, count: 1 });
-    out.forEach(function (e) { if (!e.glyph) e.glyph = glyph(e.name); });
+    function sts(id, n) { var x = STATUS[id]; out.push({ id: id, kind: 'sts', name: x.name, text: x.text, when: x.when, steal: NO_STEAL, count: n }); }
+    if (f.status.burn) sts('burn', f.status.burn);
+    if (f.status.knockdown) sts('knockdown', 1);
+    if (f.status.frozen) sts('frozen', 1);
+    if (f.shield) sts('shield', f.shield);
+    if (f.sealed) sts('sealed', 1);
+    out.forEach(function (e) { if (!e.glyph) e.glyph = glyph(e.name, e.id); });
     return out;
+  }
+  function countLabel(e) {
+    if (e.kind === 'sts') return 'STATUS · ×' + e.count;
+    return 'TOKEN · ' + (e.max > 1 ? e.count + ' / ' + e.max : e.count ? 'HELD' : 'NOT HELD');
+  }
+  function facts(e) {
+    var d = el('dl', 'facts');
+    [['What it does', e.text], ['Can it be stolen?', e.steal], ['When is it used?', e.when]].forEach(function (r) {
+      if (!r[1]) return;
+      d.appendChild(el('dt', '', r[0])); d.appendChild(el('dd', '', r[1]));
+    });
+    return d;
   }
 
   // ---------------------------------------------------------------- board (Layout A)
@@ -211,13 +236,13 @@
 
     var fx = el('div', 'fx');
     effects(s, f).forEach(function (e) {
-      var b = el('button', 'eff k-' + e.kind + (opts.open === e.id ? ' sel' : ''));
+      var b = el('button', 'eff k-' + e.kind + (e.empty ? ' empty' : '') + (opts.open === e.id ? ' sel' : ''));
       b.type = 'button';
       b.setAttribute('aria-label', e.name + (e.count > 1 ? ' ×' + e.count : '') + '. Show what it does');
       b.setAttribute('aria-expanded', opts.open === e.id ? 'true' : 'false');
       b.title = e.name;
       b.appendChild(el('div', 'g', e.glyph));
-      if (e.count > 1 || e.max > 1) b.appendChild(el('span', 'ct', e.count));
+      if (!e.empty && (e.count > 1 || e.max > 1)) b.appendChild(el('span', 'ct', e.count));
       if (opts.onEffect) b.addEventListener('click', function (ev) { ev.stopPropagation(); opts.onEffect(f.id, e.id); });
       fx.appendChild(b);
     });
@@ -231,7 +256,8 @@
     return root;
   }
 
-  // The dropdown under a HUD when a token is tapped.
+  // The dropdown under a HUD when a token is tapped: name, what it does,
+  // whether it can be stolen, and when it's used. Then the rest of their tokens.
   function fxPanel(s, f, selId, onPick, onClose) {
     var list = effects(s, f);
     var sel = list.filter(function (e) { return e.id === selId; })[0] || list[0];
@@ -243,27 +269,27 @@
     }
     if (sel) {
       var top = el('div', 'top');
-      top.appendChild(el('div', 'big k-' + sel.kind, sel.glyph));
+      top.appendChild(el('div', 'big k-' + sel.kind + (sel.empty ? ' empty' : ''), sel.glyph));
       var t = el('div');
       var nm = el('div', 'nm', sel.name);
-      var kd = el('span', 'kd', (sel.kind === 'tok' ? 'TOKEN' : 'STATUS') + ' · ' + (sel.max > 1 ? sel.count + ' / ' + sel.max : '×' + sel.count));
+      var kd = el('span', 'kd', countLabel(sel));
       kd.style.color = sel.kind === 'tok' ? '#3ee6e0' : '#ff6b8b';
       nm.appendChild(kd);
       t.appendChild(nm);
-      t.appendChild(el('div', 'tx', sel.text));
+      t.appendChild(facts(sel));
       top.appendChild(t);
       p.appendChild(top);
     }
     var others = list.filter(function (e) { return !sel || e.id !== sel.id; });
     if (others.length) {
       var l = el('div', 'list');
-      l.appendChild(el('div', 'lab', 'ALL OF ' + f.name.toUpperCase() + "'S EFFECTS"));
+      l.appendChild(el('div', 'lab', f.name.toUpperCase() + "'S OTHER TOKENS · TAP ONE"));
       others.forEach(function (e) {
-        var b = el('button', 'li'); b.type = 'button';
-        b.appendChild(el('div', 'big k-' + e.kind, e.glyph));
+        var b = el('button', 'li' + (e.empty ? ' empty' : '')); b.type = 'button';
+        b.appendChild(el('div', 'big k-' + e.kind + (e.empty ? ' empty' : ''), e.glyph));
         var t = el('div');
         var nm = el('div', 'nm2', e.name);
-        var kd = el('span', 'kd', (e.kind === 'tok' ? 'TOKEN' : 'STATUS') + ' · ' + (e.max > 1 ? e.count + ' / ' + e.max : '×' + e.count));
+        var kd = el('span', 'kd', countLabel(e));
         kd.style.color = e.kind === 'tok' ? '#3ee6e0' : '#ff6b8b';
         nm.appendChild(kd);
         t.appendChild(nm);
@@ -279,7 +305,7 @@
 
   // Version tag at the bottom of every screen. Turns gold with a reload hint if any
   // piece (this page, the shared UI file, or the server) is out of date.
-  var VERSION = '0.5';
+  var VERSION = '0.6';
   function versionTag(pageVersion) {
     var tag = document.getElementById('ver');
     if (!tag) return;

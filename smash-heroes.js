@@ -727,6 +727,31 @@ function catalog() {
   return out;
 }
 
-const TOKEN_INFO = Object.fromEntries(Object.entries(TOKENS).map(([k, v]) => [k, { name: v.name, color: v.color, text: v.text, max: v.max }]));
+// When each token does its thing (shown when you tap a token).
+const TOKEN_WHEN = {
+  "avatarState": "Always on while you hold it: every attack you make gets +5, and every hit on you is cut by 2. Knocked out of it by 10+ damage from one attack.",
+  "airScooter": "Used automatically: the next attack that damages you spends one.",
+  "masteryAir": "Kept until you cast Energybending (your Ultimate) on your turn, which uses all four.",
+  "masteryWater": "Kept until you cast Energybending (your Ultimate) on your turn, which uses all four.",
+  "masteryEarth": "Kept until you cast Energybending (your Ultimate) on your turn, which uses all four.",
+  "masteryFire": "Kept until you cast Energybending (your Ultimate) on your turn, which uses all four.",
+  "biggoron": "Always on while you hold it.",
+  "fairy": "Goes off by itself the moment you would drop to 0 health.",
+  "hammerLock": "Your next offensive roll, then it's gone.",
+  "might": "Your turn, when you pick an attack: choose how many to spend.",
+  "burrowed": "Used automatically on the next attack against you.",
+  "drained": "Your next turn: you skip your roll, then it's gone.",
+  "weaponUp": "Used automatically on your next attack that deals damage (all of them at once).",
+  "cover": "Used automatically the next time you defend: roll a die first, 1-2 and the attack misses.",
+  "tagged": "Goes off by itself at the start of your next turn."
+};
+const TOKEN_INFO = Object.fromEntries(Object.entries(TOKENS).map(([k, v]) => [k, {
+  name: v.name, color: v.color, text: v.text, max: v.max,
+  when: TOKEN_WHEN[k] || '',
+  steal: STEAL_ORDER.includes(k),
+  stealNote: STEAL_ORDER.includes(k)
+    ? (k === 'fairy' || k === 'biggoron' ? "Yes. Link's Hookshot takes one, and Link keeps it." : "Yes. Link's Hookshot can take one away.")
+    : 'No. Nothing can steal it.'
+}]));
 
 module.exports = { LT, OT, MT, HEROES, GENERIC, CARDS, TOKENS, TOKEN_INFO, MASTERY, MAX_CP, fx, deckFor, catalog, count, smallStraight, largeStraight, fullHouse };
