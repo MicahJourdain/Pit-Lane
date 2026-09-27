@@ -124,7 +124,7 @@
     plate.appendChild(el('div', 'tt', f.name + ' · ' + h.title + (f.bot ? ' · bot' : '')));
     var st = el('div', 'st');
     var hp = el('span'); hp.appendChild(el('b', '', f.alive ? f.hp : 'KO')); hp.appendChild(document.createTextNode(' / ' + f.maxHp + ' HP'));
-    var bp = el('span'); bp.style.color = '#ffc23d'; bp.appendChild(el('b', '', f.cp)); bp.appendChild(document.createTextNode(' BP'));
+    var bp = el('span'); bp.style.color = '#b79cff'; bp.appendChild(el('b', '', f.cp)); bp.appendChild(document.createTextNode(' BP'));
     var cd = el('span'); cd.appendChild(el('b', '', f.cards)); cd.appendChild(document.createTextNode(' cards'));
     st.appendChild(hp); st.appendChild(bp); st.appendChild(cd);
     plate.appendChild(st);
@@ -221,7 +221,7 @@
     if (s.result) s.result.hits.forEach(function (x) { if (x.targetId === f.id) hit = x.taken; });
     var bar = el('div', 'bar'); var bi = el('div');
     var fill = el('div', 'fill'); fill.style.width = pct + '%';
-    fill.style.background = pct > 50 ? '#7ed98a' : pct > 25 ? '#ffd23d' : '#ff4d5e';
+    fill.style.background = pct > 50 ? '#7ed98a' : pct > 25 ? '#ff9f5a' : '#ff4d5e';
     var ghost = el('div', 'ghost'); ghost.style.width = Math.min(hit, f.maxHp - Math.max(0, f.hp)) / f.maxHp * 100 + '%';
     bi.appendChild(fill); bi.appendChild(ghost); bar.appendChild(bi);
     root.appendChild(bar);
@@ -305,7 +305,7 @@
 
   // Version tag at the bottom of every screen. Turns gold with a reload hint if any
   // piece (this page, the shared UI file, or the server) is out of date.
-  var VERSION = '0.6';
+  var VERSION = '0.8';
   function versionTag(pageVersion) {
     var tag = document.getElementById('ver');
     if (!tag) return;

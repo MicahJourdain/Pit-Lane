@@ -6,7 +6,7 @@ const H = require('./smash-heroes');
 const { HEROES, CARDS, fx } = H;
 
 // Bump this with every update. Every screen shows it at the bottom.
-const VERSION = '0.6';
+const VERSION = '0.8';
 const MAX_FIGHTERS = 4;
 const HAND_START = 4;
 const HAND_LIMIT = 6;

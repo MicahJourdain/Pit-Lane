@@ -20,7 +20,7 @@
     --line: #3a3163;
     --shadow: #0a0818;
     --teal: #3ee6e0;
-    --gold: #ffc23d;
+    --gold: #b79cff;
     --red: #ff4f8b;
     --green: #5ee07a;
     --soft: #2b2450;
@@ -52,7 +52,7 @@
   button.dark { background: #0c0a1c; color: var(--ink); }
   button.teal { background: var(--teal); color: var(--on); }
   button.small { font-size: 15px; padding: 8px 12px; min-height: 44px; box-shadow: 3px 3px 0 var(--shadow); }
-  button:disabled { opacity: .4; cursor: default; box-shadow: none; transform: none; }
+  button:disabled { opacity: .6; cursor: default; box-shadow: none; transform: none; }
   button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
   .row { display: flex; gap: 10px; align-items: center; }
   .stack { display: grid; gap: 12px; }
@@ -62,7 +62,7 @@
   .divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--ink); opacity: .2; }
   .panel { background: var(--card); border: 3px solid var(--line); border-radius: 16px; box-shadow: 5px 5px 0 var(--shadow); padding: 14px; }
   .ver { text-align: center; padding: 18px 0 calc(10px + env(safe-area-inset-bottom, 0px)); font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .14em; color: #8f86b3; }
-  .ver.old { color: #ffc23d; }
+  .ver.old { color: #b79cff; }
   [hidden] { display: none !important; }
 
   /* lobby */
@@ -134,10 +134,18 @@
   .ab b { font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.05; }
   .ab em { font-style: normal; font-family: var(--label); font-weight: 700; font-size: 14px; color: var(--muted); text-align: right; }
   .ab span { grid-column: 1 / -1; color: var(--muted); }
-  .ab.on { background: #3a3060; border-color: var(--gold); }
-  .ab.ult.on { background: var(--ink); color: #fff; }
-  .ab.ult.on span, .ab.ult.on em { color: #BFE9EF; }
-  .ab:disabled { opacity: .45; }
+  /* Ability list while rolling: everything stays easy to read. Usable ones glow gold
+     and say READY; the rest look like normal cards (never faded). */
+  .ab { color: var(--ink); border-color: var(--line); }
+  .ab b { color: #ffffff; }
+  .ab em, .ab span { color: #d9d2f0; }
+  .ab:disabled { opacity: 1; background: var(--card); border-color: var(--line); color: var(--ink); }
+  .ab.on { background: #1d3a3a; border-color: #6ee7b7; box-shadow: 0 0 0 2px #6ee7b7, 0 0 16px rgba(110, 231, 183,.35); }
+  .ab .ready { grid-column: 1 / -1; justify-self: start; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; background: #6ee7b7; color: #16122b; border-radius: 6px; padding: 1px 8px; margin-top: 4px; }
+  .ab.ult { background: #211a40; border-color: #5a4a9c; }
+  .ab.ult em, .ab.ult span { color: #e6ddff; }
+  .ab.ult.on { background: #2e2260; border-color: #6ee7b7; box-shadow: 0 0 0 2px #6ee7b7, 0 0 16px rgba(110, 231, 183,.35); color: #fff; }
+  .ab.ult.on em, .ab.ult.on span { color: #f1ecff; }
   .ab .lv { display: inline-block; font-family: var(--label); font-weight: 700; font-size: 12px; background: var(--teal); color: var(--ink); border-radius: 6px; padding: 0 6px; margin-left: 6px; vertical-align: 3px; }
 
   .hand { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
@@ -184,7 +192,7 @@
   .huds .ssr-hud .eff { width: 1.9em; height: 1.9em; }
   .huds .ssr-hud .hp { font-size: 1.2em; }
   .table { margin: 6px 0 14px; }
-  .reveal { background: #F6EAD2; color: #1E1B2E; border: 3px solid #E3C98F; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+  .reveal { background: #efeaff; color: #1E1B2E; border: 3px solid #8f7fd6; border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
   .reveal .top { display: flex; justify-content: space-between; font-family: var(--label); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #5E5870; }
   .reveal .cn { font-family: var(--display); font-size: 22px; line-height: 1.05; margin: 2px 0; }
   .log { list-style: none; margin: 0; padding: 0; font-size: 14px; color: var(--muted); }
@@ -301,7 +309,7 @@
   </div>
 </div>
 
-<div class="ver" id="ver">v0.6</div>
+<div class="ver" id="ver">v0.8</div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/smash/ui.js"></script>
 <script>
@@ -312,7 +320,7 @@ window.addEventListener('error', function (ev) {
 
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var PAGE_VERSION = '0.6';
+  var PAGE_VERSION = '0.8';
   SSR.versionTag(PAGE_VERSION);
   if (typeof io === 'undefined') {
     $('entry-error').textContent = 'Could not reach the game server. Check your internet, then reload.';
@@ -552,7 +560,7 @@ window.addEventListener('error', function (ev) {
     var stats = el('div', 'row');
     var hp = el('div', 'stat'); hp.appendChild(el('b', '', f.hp)); hp.appendChild(el('span', '', 'HEALTH'));
     var cp = el('div', 'stat'); cp.appendChild(el('b', '', f.cp)); cp.appendChild(el('span', '', 'BP'));
-    cp.querySelector('b').style.color = '#ffc23d';
+    cp.querySelector('b').style.color = '#b79cff';
     stats.appendChild(hp); stats.appendChild(cp);
     box.appendChild(left); box.appendChild(stats);
     var bar = el('div', 'hpbar'); var i = el('i'); i.style.width = Math.max(0, Math.round(100 * f.hp / f.maxHp)) + '%';
@@ -849,6 +857,7 @@ window.addEventListener('error', function (ev) {
       b.appendChild(name);
       b.appendChild(el('em', '', a.need));
       b.appendChild(el('span', '', abilityText(mine, a)));
+      if (on) b.appendChild(el('i', 'ready', 'Ready · tap to use'));
       if (pickable) {
         b.disabled = !on || busy;
         b.addEventListener('click', function () { startAttack(mine, a); });

@@ -3,7 +3,7 @@
    TV and the phone just set a different font-size on the wrapper. */
 
 .ssr { --bg: #16122b; --panel: #221c3d; --edge: #3a3163; --ink: #f4efe6; --soft: #b9b0d6; --text: #d9d2f0;
-  --teal: #3ee6e0; --gold: #ffc23d; --pink: #ff4f8b; --hud: #cfe6ff; --hud-bg: #0c0a1c; --hud-muted: #9fb4d8;
+  --teal: #3ee6e0; --gold: #b79cff; --pink: #ff4f8b; --hud: #cfe6ff; --hud-bg: #0c0a1c; --hud-muted: #9fb4d8;
   color: var(--ink); font-family: 'Barlow Semi Condensed', 'Barlow Condensed', 'Arial Narrow', sans-serif; }
 .ssr * { box-sizing: border-box; }
 
@@ -33,24 +33,24 @@
 .ssr-card .t { font-family: Anton, Impact, sans-serif; font-size: 1.15em; line-height: 1.05; letter-spacing: .02em; color: #ffffff; text-shadow: 0 .06em .2em rgba(0,0,0,.6); }
 .ssr-card .lv { position: absolute; top: .5em; right: .5em; font-family: Anton, Impact, sans-serif; font-size: .85em; background: var(--teal); color: var(--bg); border-radius: .3em; padding: 0 .4em; }
 .ssr-chips { display: flex; flex-wrap: wrap; gap: .3em; }
-.ssr-chip { min-width: 1.75em; height: 1.75em; padding: 0 .3em; border-radius: .4em; background: var(--ink); color: var(--bg); font-family: Anton, Impact, sans-serif; font-size: .9em; display: inline-flex; align-items: center; justify-content: center; }
-.ssr-card .x { font-size: .95em; line-height: 1.25; color: var(--text); }
+.ssr-chip { box-shadow: inset 0 0 0 .09em rgba(255,255,255,.4); min-width: 1.75em; height: 1.75em; padding: 0 .3em; border-radius: .4em; background: var(--ink); color: var(--bg); font-family: Anton, Impact, sans-serif; font-size: .9em; display: inline-flex; align-items: center; justify-content: center; }
+.ssr-card .x { font-size: .95em; line-height: 1.25; color: #e4def7; }
 .ssr-card.def { background: #14303a; border: .15em solid var(--teal); }
 .ssr-card.def .t { color: #ffffff; }
 .ssr-card.def .dl { display: flex; align-items: center; gap: .4em; color: var(--teal); font-family: Anton, Impact, sans-serif; font-size: .95em; letter-spacing: .12em; }
-.ssr-card.q { box-shadow: 0 0 0 .22em var(--gold), 0 0 1.2em .1em rgba(255, 194, 61, .5); transform: translateY(-.2em); }
+.ssr-card.q { border-color: #6ee7b7; box-shadow: 0 0 0 .2em #6ee7b7, 0 0 1.2em .1em rgba(110, 231, 183, .45); transform: translateY(-.2em); }
 .ssr-card.use { box-shadow: 0 0 0 .25em var(--pink), 0 0 1.4em .3em rgba(255, 79, 139, .6); transform: scale(1.03); z-index: 2; }
-/* Cards your dice don't make: fade the details but keep the name easy to read. */
-.ssr-card.dim { background: #1b1733; }
-.ssr-card.dim .ssr-chips, .ssr-card.dim .x, .ssr-card.dim .n { opacity: .5; }
-.ssr-card.dim .t { color: #e6e0ff; }
-.ssr-ult { display: flex; align-items: center; gap: 1.2em; background: #2e2415; border: .17em solid var(--gold); border-radius: .9em; padding: .8em 1.2em; }
+/* While rolling: cards your dice don't make stay fully readable (so you can see what
+   to roll for); cards you CAN use glow gold and get a READY tag. */
+.ssr-card.dim { background: var(--panel); }
+.ssr-card.q::after { content: 'READY'; position: absolute; right: .55em; bottom: .5em; font-family: Anton, Impact, sans-serif; font-size: .8em; letter-spacing: .08em; background: #6ee7b7; color: var(--bg); border-radius: .3em; padding: .05em .45em; }
+.ssr-ult { display: flex; align-items: center; gap: 1.2em; background: #211a40; border: .17em solid var(--gold); border-radius: .9em; padding: .8em 1.2em; }
 .ssr-ult .k { display: flex; flex-direction: column; gap: .2em; color: var(--gold); font-family: Anton, Impact, sans-serif; font-size: 1.2em; letter-spacing: .12em; }
 .ssr-ult .un { display: flex; align-items: center; gap: .8em; flex-wrap: wrap; }
 .ssr-ult .un b { font-family: Anton, Impact, sans-serif; font-weight: 400; font-size: 1.7em; line-height: 1; }
-.ssr-ult .ux { font-size: 1em; color: #eadfc8; margin-top: .3em; }
+.ssr-ult .ux { font-size: 1em; color: #e6ddff; margin-top: .3em; }
 .ssr-ult .ssr-chip { background: var(--gold); }
-.ssr-ult.q { box-shadow: 0 0 0 .22em var(--gold), 0 0 1.4em .3em rgba(255, 194, 61, .6); }
+.ssr-ult.q { background: #2e2260; box-shadow: 0 0 0 .22em #6ee7b7, 0 0 1.4em .3em rgba(110, 231, 183, .5); }
 .ssr-ult.use { box-shadow: 0 0 0 .25em var(--pink), 0 0 1.4em .3em rgba(255, 79, 139, .6); }
 
 /* Phone-sized board: one column */
@@ -74,14 +74,14 @@
 .ssr-hud.flip .plate { transform: skewX(18deg); }
 .ssr-hud .plate > div { transform: skewX(18deg); min-width: 0; }
 .ssr-hud.flip .plate > div { transform: skewX(-18deg); text-align: right; }
-.ssr-hud.is-turn .plate { border-color: #ffd23d; box-shadow: 0 0 0 .08em #ffd23d, 0 0 1em rgba(255, 210, 61, .4); }
+.ssr-hud.is-turn .plate { border-color: var(--teal); box-shadow: 0 0 0 .08em var(--teal), 0 0 1em rgba(62, 230, 224, .4); }
 .ssr-hud.is-def .plate { border-color: var(--pink); box-shadow: 0 0 0 .08em var(--pink), 0 0 1em rgba(255, 79, 139, .4); }
-.ssr-hud.is-out { opacity: .45; }
+.ssr-hud.is-out { opacity: .6; }
 .ssr-hud .who { display: flex; align-items: center; gap: .45em; font-size: .78em; font-weight: 700; letter-spacing: .12em; color: var(--hud-muted); white-space: nowrap; min-width: 0; }
 .ssr-hud.flip .who { justify-content: flex-end; }
 .ssr-hud .who .nmx { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ssr-hud .who i { width: .75em; height: .75em; display: inline-block; flex: none; }
-.ssr-hud .who .tg { color: #ffd23d; flex: none; }
+.ssr-hud .who .tg { color: var(--teal); flex: none; }
 .ssr-hud .who .tg.d { color: var(--pink); }
 .ssr-hud .hero { font-size: 1.75em; font-weight: 700; line-height: 1.05; letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ssr-hud .bar { grid-area: bar; height: 1.55em; background: var(--hud); padding: .12em; clip-path: polygon(0 0, 100% 0, calc(100% - 1.2em) 100%, 0 100%); }
@@ -92,15 +92,15 @@
 .ssr-hud .bar .ghost { height: 100%; background: #b0707a; opacity: .85; }
 .ssr-hud .row { grid-area: row; display: flex; align-items: center; gap: .3em .8em; flex-wrap: wrap; padding-right: 1.3em; min-width: 0; }
 .ssr-hud.flip .row { flex-direction: row-reverse; padding-right: 0; padding-left: 1.3em; }
-.ssr-hud .bp { display: flex; align-items: center; gap: .35em; color: #ffd23d; font-weight: 700; }
+.ssr-hud .bp { display: flex; align-items: center; gap: .35em; color: #b79cff; font-weight: 700; }
 .ssr-hud .bp .k { letter-spacing: .1em; font-size: .9em; }
 .ssr-hud .bp .v { font-size: 1.05em; min-width: 1em; }
 .ssr-hud .bp .pips { display: flex; gap: .14em; }
-.ssr-hud .bp .pips span { width: .55em; height: .7em; transform: skewX(-18deg); border: .07em solid #ffd23d; display: inline-block; }
+.ssr-hud .bp .pips span { width: .55em; height: .7em; transform: skewX(-18deg); border: .07em solid #b79cff; display: inline-block; }
 .ssr-hud.flip .bp .pips { flex-direction: row-reverse; }
 .ssr-hud.flip .bp .pips span { transform: skewX(18deg); }
 .ssr-hud.flip .bp { flex-direction: row-reverse; }
-.ssr-hud .bp .pips span.on { background: #ffd23d; }
+.ssr-hud .bp .pips span.on { background: #b79cff; }
 .ssr-hud .fx { display: flex; flex-wrap: wrap; gap: .4em; align-items: center; min-width: 0; }
 .ssr-hud.flip .fx { flex-direction: row-reverse; }
 .ssr-hud .fx .cards { font-size: .75em; color: var(--hud-muted); letter-spacing: .1em; font-weight: 700; white-space: nowrap; }
