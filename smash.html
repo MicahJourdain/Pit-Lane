@@ -72,11 +72,12 @@
   #heroes .hero {
     display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; text-align: left;
     text-transform: none; letter-spacing: normal; font-family: var(--body); font-weight: 400; font-size: 15px;
-    background: var(--card); padding: 12px;
+    background: var(--card); padding: 12px; color: #d9d2f0;
   }
+  #heroes .hero .bl { color: #d9d2f0; line-height: 1.35; }
   #heroes .hero .mono { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--line); object-fit: cover; object-position: center 25%; display: block; }
-  #heroes .hero .hn { font-family: var(--display); font-size: 28px; line-height: 1; }
-  #heroes .hero .ht { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  #heroes .hero .hn { font-family: var(--display); font-size: 28px; line-height: 1; color: #ffffff; }
+  #heroes .hero .ht { font-family: var(--label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: #3ee6e0; }
   #heroes .hero[aria-pressed="true"] { background: #2e2560; box-shadow: 0 0 0 4px var(--teal), 5px 5px 0 var(--line); }
   ul.roster { list-style: none; margin: 0 0 16px; padding: 0; }
   ul.roster li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 2px solid rgba(30,27,46,.12); }
@@ -304,7 +305,7 @@
   </div>
 </div>
 
-<div class="ver" id="ver">v0.4</div>
+<div class="ver" id="ver">v0.5</div>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/smash/ui.js"></script>
 <script>
@@ -315,7 +316,7 @@ window.addEventListener('error', function (ev) {
 
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var PAGE_VERSION = '0.4';
+  var PAGE_VERSION = '0.5';
   SSR.versionTag(PAGE_VERSION);
   if (typeof io === 'undefined') {
     $('entry-error').textContent = 'Could not reach the game server. Check your internet, then reload.';
@@ -508,7 +509,7 @@ window.addEventListener('error', function (ev) {
       var txt = el('span');
       txt.appendChild(el('div', 'hn', h.name));
       txt.appendChild(el('div', 'ht', h.title));
-      txt.appendChild(el('div', '', h.blurb));
+      txt.appendChild(el('div', 'bl', h.blurb));
       b.appendChild(mono); b.appendChild(txt);
       b.addEventListener('click', function () { send('smash:hero', { hero: id }); });
       box.appendChild(b);

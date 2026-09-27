@@ -18,7 +18,10 @@ const TOKENS = {
   hammerLock:  { name: 'Hammer Lock', max: 1, color: '#7A7488', text: 'Your next offensive roll uses 4 dice.' },
   might:       { name: 'Might', max: 5, color: '#C98A12', text: 'Spend when attacking: +2 damage each.' },
   burrowed:    { name: 'Burrowed', max: 1, color: '#6B5A3E', text: 'Halve the damage of the next attack against you.' },
-  drained:     { name: 'Drained', max: 1, color: '#7A7488', text: 'Skip your next offensive roll.' }
+  drained:     { name: 'Drained', max: 1, color: '#7A7488', text: 'Skip your next offensive roll.' },
+  weaponUp:    { name: 'Weapon Upgrade', max: 3, color: '#C8362A', text: 'Your next attack that deals damage gets +3 for each one you hold (up to 3). They are all used up on that attack.' },
+  cover:       { name: 'In Cover', max: 1, color: '#8A8A8A', text: 'The next attack you defend against: roll a die, on 1-2 it misses completely.' },
+  tagged:      { name: 'Frag Tagged', max: 1, color: '#7FD13B', text: 'At the start of your turn the grenade goes off: take 4 damage that cannot be blocked.' }
 };
 
 const MASTERY = ['masteryAir', 'masteryWater', 'masteryEarth', 'masteryFire'];
@@ -486,7 +489,128 @@ const onua = {
   ]
 };
 
-const HEROES = { aang, link, onua };
+
+// ---------------- Marcus (Gears of War) — glass cannon: 2 less health, weak defense,
+// but Weapon Upgrade tokens stack up big damage on every attack.
+const MT = {
+  shred: [9, 11], shredHeal: [3, 4], reload: [4, 5], reloadGain: [1, 2], roadie: [6, 8],
+  cog: [10, 12], frag: [5, 7], snub: [5, 7], hammer: [10, 12], tagDmg: 3, ult: 13, execute: 10,
+  upBonus: 3, meatBlock: [1, 2], meatGren: [0, 1], hpMod: -2
+};
+const sum = (dice) => dice.reduce((a, b) => a + b, 0);
+const twoPair = (dice) => {
+  const c = {};
+  dice.forEach((d) => { c[d] = (c[d] || 0) + 1; });
+  return Object.values(c).filter((n) => n >= 2).length >= 2 || Object.values(c).some((n) => n >= 4);
+};
+const marcus = {
+  id: 'marcus',
+  name: 'Marcus',
+  title: 'Delta Squad',
+  color: '#C8362A',
+  accent: '#1A1A1A',
+  get hpMod() { return MT.hpMod; }, // glass cannon
+  smartBot: true,     // bots plan his odd dice combos instead of just keeping one symbol
+  blurb: 'Glass cannon. Stack Weapon Upgrades, hit hard, and finish them with a Curb Stomp.',
+  faces: { 1: 'lancer', 2: 'lancer', 3: 'lancer', 4: 'grenade', 5: 'grenade', 6: 'cog' },
+  symbols: {
+    lancer: { name: 'Lancer', color: '#C8362A' },
+    grenade: { name: 'Grenade', color: '#6B6B6B' },
+    cog: { name: 'COG', color: '#111111' }
+  },
+  wildNote: 'Glass cannon: Marcus starts with 2 less health and has a weak defense. Stack Weapon Upgrades (up to 3), then unload them all on one attack for +3 damage each.',
+  abilities: [
+    {
+      id: 'shred', name: 'Revive & Shred', space: 1, ring: true, slot: 'Lancer', need: 'Lancer run (1, 2, 3)',
+      get text() { return [`${MT.shred[0]} dmg. Heal ${MT.shredHeal[0]}.`, `${MT.shred[1]} dmg. Heal ${MT.shredHeal[1]}.`]; },
+      match: ({ dice }) => yes([1, 2, 3].every((v) => dice.includes(v))),
+      plan: ({ lvl }) => ({ dmg: MT.shred[lvl - 1], self: ({ att }) => fx.heal(att, MT.shredHeal[lvl - 1]) })
+    },
+    {
+      id: 'reload', name: 'Active Reload', space: 2, ring: true, slot: 'Reload', need: 'Two pair',
+      get text() { return [`${MT.reload[0]} dmg. Gain ${MT.reloadGain[0]} Weapon Upgrade.`, `${MT.reload[1]} dmg. Gain ${MT.reloadGain[1]} Weapon Upgrades.`]; },
+      match: ({ dice }) => yes(twoPair(dice)),
+      bot: ({ att }) => (3 - (att.tokens.weaponUp || 0)) * 3,
+      plan: ({ lvl }) => ({ dmg: MT.reload[lvl - 1], self: ({ att }) => fx.gain(att, 'weaponUp', MT.reloadGain[lvl - 1]) })
+    },
+    {
+      id: 'roadie', name: 'Roadie Run', space: 3, need: 'Small straight',
+      get text() { return [`${MT.roadie[0]} dmg. Get In Cover.`, `${MT.roadie[1]} dmg. Get In Cover.`]; },
+      match: ({ dice }) => yes(smallStraight(dice)),
+      plan: ({ lvl }) => ({ dmg: MT.roadie[lvl - 1], self: ({ att }) => fx.gain(att, 'cover') })
+    },
+    {
+      id: 'cog', name: 'For the COG!', space: 4, need: '4 COG (6, 6, 6, 6)',
+      get text() { return [`${MT.cog[0]} dmg. Resilience: heal 4, or 8 if you're at 15 health or less.`, `${MT.cog[1]} dmg. Resilience: heal 4, or 8 if you're at 15 health or less.`]; },
+      match: ({ dice }) => yes(count(dice, [6]) >= 4),
+      plan: ({ lvl }) => ({ dmg: MT.cog[lvl - 1], self: ({ att }) => fx.heal(att, att.hp <= 15 ? 8 : 4) })
+    },
+    {
+      id: 'frag', name: 'Frag Tagged', space: 5, ring: true, slot: 'Grenade', need: '3 Grenade (4-5 ×3)',
+      get text() { return [`${MT.frag[0]} dmg. Tag them: at the start of their turn it blows for ${MT.tagDmg} (can't be blocked).`, `${MT.frag[1]} dmg. Tag them: at the start of their turn it blows for ${MT.tagDmg} (can't be blocked).`]; },
+      match: ({ dice }) => yes(count(dice, [4, 5]) >= 3),
+      plan: ({ lvl }) => ({ dmg: MT.frag[lvl - 1], hit: (ctx, t, notes) => { fx.gain(t, 'tagged'); notes.push(`${t.name} is Frag Tagged`); } })
+    },
+    {
+      id: 'snub', name: 'Snub Pistol Snipe', space: 6, ring: true, slot: 'Snipe', need: 'Dice add up to 22+',
+      get text() { return [`${MT.snub[0]} dmg. Can't be defended.`, `${MT.snub[1]} dmg. Can't be defended.`]; },
+      match: ({ dice }) => yes(sum(dice) >= 22),
+      plan: ({ lvl }) => ({ dmg: MT.snub[lvl - 1], undefendable: true })
+    },
+    {
+      id: 'hammer', name: 'Hammer of Dawn', space: 7, need: 'Large straight',
+      get text() { return [`${MT.hammer[0]} dmg. Burn.`, `${MT.hammer[1]} dmg. Burn.`]; },
+      match: ({ dice }) => yes(largeStraight(dice)),
+      plan: ({ lvl }) => ({ dmg: MT.hammer[lvl - 1], hit: (ctx, t, notes) => fx.inflict(t, 'burn', notes) })
+    }
+  ],
+  ultimate: {
+    id: 'stomp', name: 'Curb Stomp', need: '5 COG',
+    get text() { return [`Finishing move: ${MT.ult} dmg, cannot be defended or reduced. If that leaves them at ${MT.execute} health or less, they're finished (KO).`]; },
+    match: ({ dice }) => yes(count(dice, [6]) >= 5),
+    plan: () => ({
+      dmg: MT.ult, pure: true,
+      hit: (ctx, t, notes) => {
+        if (t.alive && t.hp > 0 && t.hp <= MT.execute) { notes.push(`${ctx.att.name} finishes ${t.name}`); fx.hurt(t, t.hp, notes); }
+      }
+    })
+  },
+  defense: {
+    id: 'meat', name: 'Meat Shield', dice: [5, 5],
+    get text() { return [0, 1].map((i) => `Roll 5. Each COG: prevent ${MT.meatBlock[i]} and deal 1 back.` + (MT.meatGren[i] ? ` Each Grenade: prevent ${MT.meatGren[i]}.` : '')); },
+    resolve: (dice, lvl) => {
+      const cogs = count(dice, [6]);
+      return { prevent: cogs * MT.meatBlock[lvl - 1] + count(dice, [4, 5]) * MT.meatGren[lvl - 1], reflect: cogs };
+    }
+  },
+  upgrades: [
+    ['shred', 'Revive & Shred II', 2], ['reload', 'Perfect Reload', 2], ['roadie', 'Roadie Run II', 2],
+    ['cog', 'For the COG! II', 3], ['frag', 'Frag Tagged II', 2], ['snub', 'Snub Pistol II', 2],
+    ['hammer', 'Hammer of Dawn II', 3], ['meat', 'Meat Shield II', 3]
+  ],
+  cards: [
+    { id: 'ammo', name: 'Ammo Crate', cost: 1, type: 'main', text: 'Gain 1 Weapon Upgrade.',
+      play: ({ me }) => fx.gain(me, 'weaponUp') },
+    { id: 'dom', name: "Dom's Got Your Back", cost: 2, type: 'instant', text: 'Prevent 4 dmg from the next attack on you this turn.',
+      play: ({ me }) => { me.shield += 4; } },
+    { id: 'boomshot', name: 'Boomshot', cost: 3, type: 'main', text: 'Deal 4 dmg to an opponent. It cannot be defended.',
+      pick: [{ k: 'target', label: 'Who gets the Boomshot?' }],
+      play: ({ target, notes }) => { fx.hurt(target, 4, notes); target.lastDamage = 4; notes.push(`${target.name} takes 4`); } },
+    { id: 'dbno', name: 'Down But Not Out', cost: 2, type: 'instant', text: 'Heal 3. If you are at 15 health or less, heal 7 instead.',
+      play: ({ me }) => fx.heal(me, me.hp <= 15 ? 7 : 3) },
+    { id: 'rev', name: 'Lancer Rev', cost: 1, type: 'roll', roll: 'own', text: 'Set one of your dice to a Lancer face (1, 2 or 3).',
+      pick: [{ k: 'ownDie', label: 'Which die?' }, { k: 'face', label: 'Set it to (1, 2 or 3)' }],
+      check: ({ faces }) => (faces[0] > 3 ? 'Pick 1, 2 or 3.' : null),
+      play: ({ setDie, dice, faces }) => setDie(dice[0], faces[0]) },
+    { id: 'torque', name: 'Torque Bow Charge', cost: 2, type: 'roll', roll: 'offense', text: 'Your attack this turn deals +3 dmg.',
+      play: ({ room }) => { room.turnFlags.torque = true; } },
+    { id: 'seal', name: 'Seal the E-Hole', cost: 2, type: 'instant', text: 'An opponent loses 2 BP. Draw 1 card.',
+      pick: [{ k: 'target', label: 'Whose hole gets sealed?' }],
+      play: ({ me, target, draw }) => { fx.cp(target, -2); draw(me, 1); } }
+  ]
+};
+
+const HEROES = { aang, link, onua, marcus };
 
 // ------------------------------------------------------------------ shared deck (18 cards)
 
@@ -536,7 +660,7 @@ const GENERIC = [
 
 // Hookshot: take the most valuable token. Fairy and Biggoron's Sword come with it.
 // Only Aang's Mastery tokens can't be taken. Air Scooter can, before Aang uses it.
-const STEAL_ORDER = ['avatarState', 'fairy', 'biggoron', 'burrowed', 'airScooter', 'might'];
+const STEAL_ORDER = ['avatarState', 'fairy', 'biggoron', 'weaponUp', 'burrowed', 'airScooter', 'cover', 'might'];
 function stealToken(att, t, notes) {
   const tok = STEAL_ORDER.find((k) => fx.has(t, k));
   if (!tok) { notes.push(`${t.name} had no token to take`); return; }
@@ -575,13 +699,15 @@ function deckFor(heroId) {
 const CHIPS = {
   aang: { whip: ['3', '3', '3'], scooter: ['1-2', '1-2', '1-2', '1-2'], flash: ['SM'], fists: ['6', '6', '6', '6'], avalanche: ['4', '4', '4'], dragon: ['5', '5', '5'], combust: ['LG'], energy: ['6', '6', '6', '6', '6'] },
   link: { slash: ['2-3', '2-3', '2-3'], hookshot: ['6', '6', '6', '6'], boomerang: ['SM'], spin: ['1', '1', '6', '6'], hammer: ['4-5', '4-5', '4-5', '4-5'], bombs: ['FH'], bow: ['LG'], triforce: ['6', '6', '6', '6', '6'] },
+  marcus: { shred: ['1', '2', '3'], reload: ['PAIR', 'PAIR'], roadie: ['SM'], cog: ['6', '6', '6', '6'], frag: ['4-5', '4-5', '4-5'], snub: ['22+'], hammer: ['LG'], stomp: ['6', '6', '6', '6', '6'] },
   onua: { swipe: ['1-2', '1-2', '1-2'], rockslide: ['3-4', '3-4', '3-4'], tunnel: ['SM'], mask: ['6', '6', '6'], night: ['5', '5', '3-4', '3-4'], grip: ['1-2', '1-2', '1-2', '3-4', '3-4'], quake: ['LG'], nova: ['6', '6', '6', '6', '6'] }
 };
 
 const TOKEN_SLOTS = {
   aang: ['masteryWater', 'masteryAir', 'masteryEarth', 'masteryFire', 'airScooter', 'avatarState'],
   link: ['biggoron', 'fairy', 'hammerLock'],
-  onua: ['might', 'burrowed', 'drained']
+  onua: ['might', 'burrowed', 'drained'],
+  marcus: ['weaponUp', 'cover']
 };
 
 // What phones and TVs need to draw hero boards. No functions.
@@ -589,7 +715,7 @@ function catalog() {
   const out = {};
   for (const h of Object.values(HEROES)) {
     out[h.id] = {
-      id: h.id, name: h.name, title: h.title, color: h.color, accent: h.accent, blurb: h.blurb,
+      id: h.id, name: h.name, title: h.title, color: h.color, accent: h.accent, blurb: h.blurb, hpMod: h.hpMod || 0,
       art: '/smash/art/' + h.id + '-center.jpg',
       tokenSlots: TOKEN_SLOTS[h.id] || [],
       faces: h.faces, symbols: h.symbols, wildNote: h.wildNote || null,
@@ -603,4 +729,4 @@ function catalog() {
 
 const TOKEN_INFO = Object.fromEntries(Object.entries(TOKENS).map(([k, v]) => [k, { name: v.name, color: v.color, text: v.text, max: v.max }]));
 
-module.exports = { LT, OT, HEROES, GENERIC, CARDS, TOKENS, TOKEN_INFO, MASTERY, MAX_CP, fx, deckFor, catalog, count, smallStraight, largeStraight, fullHouse };
+module.exports = { LT, OT, MT, HEROES, GENERIC, CARDS, TOKENS, TOKEN_INFO, MASTERY, MAX_CP, fx, deckFor, catalog, count, smallStraight, largeStraight, fullHouse };

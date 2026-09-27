@@ -17,7 +17,7 @@ module.exports = function smash(app, io) {
   // Hero art: flat files like aang-whip.jpg next to this one. Only those names are served.
   app.get('/smash/art/:file', (req, res) => {
     const f = String(req.params.file || '');
-    if (!/^(aang|link|onua)-[a-z]+\.jpg$/.test(f)) return res.status(404).end();
+    if (!/^(aang|link|onua|marcus)-[a-z]+\.jpg$/.test(f)) return res.status(404).end();
     res.set('Cache-Control', 'public, max-age=86400');
     res.sendFile(path.join(__dirname, f), (err) => { if (err && !res.headersSent) res.status(404).end(); });
   });

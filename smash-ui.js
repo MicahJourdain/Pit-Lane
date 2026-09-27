@@ -279,7 +279,7 @@
 
   // Version tag at the bottom of every screen. Turns gold with a reload hint if any
   // piece (this page, the shared UI file, or the server) is out of date.
-  var VERSION = '0.4';
+  var VERSION = '0.5';
   function versionTag(pageVersion) {
     var tag = document.getElementById('ver');
     if (!tag) return;

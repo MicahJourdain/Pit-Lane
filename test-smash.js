@@ -239,6 +239,45 @@ console.log('\nv0.3 fixes');
   check('hit result: 8 raw, Hylian Shield blocked 5, 3 taken', [res.raw, res.hits[0].blocks, res.hits[0].taken], [8, [['Hylian Shield', 5]], 3]);
 }
 
+console.log('\nMarcus');
+{
+  const M = require('./smash-heroes').HEROES.marcus;
+  const ab = (id) => M.abilities.find((a) => a.id === id);
+  check('Revive & Shred needs 1, 2, 3', [ab('shred').match({ dice: [3, 1, 6, 2, 2] }), ab('shred').match({ dice: [1, 2, 4, 5, 6] })], [0, -1]);
+  check('Active Reload needs two pair', [ab('reload').match({ dice: [2, 2, 5, 5, 1] }), ab('reload').match({ dice: [2, 2, 5, 4, 1] })], [0, -1]);
+  check('Snub Pistol needs 22+', [ab('snub').match({ dice: [6, 6, 5, 4, 1] }), ab('snub').match({ dice: [6, 5, 5, 4, 1] })], [0, -1]);
+  check('Frag Tagged needs 3 grenades', [ab('frag').match({ dice: [4, 5, 4, 1, 1] }), ab('frag').match({ dice: [4, 5, 6, 1, 1] })], [0, -1]);
+
+  const r = S.create('t-mf', 'M', 'x').room;
+  S.pickHero(r.code, 't-mf', 'marcus');
+  S.addBot(r.code, 't-mf', 'onua');
+  S.setRng(() => 0.01);
+  S.start(r.code, 't-mf', 0);
+  const me = r.fighters.find((f) => f.hero === 'marcus');
+  const foe = r.fighters.find((f) => f.hero === 'onua');
+  check('glass cannon: Marcus starts with 48 (others 50)', [me.maxHp, foe.maxHp], [48, 50]);
+  me.tokens.weaponUp = 2;
+  S.toRoll(r.code, 't-mf', 0);
+  S.setRng(dice(6, 6, 5, 4, 1)); // sum 22: Snub Pistol, can't be defended
+  S.roll(r.code, 't-mf', 0);
+  S.attack(r.code, 't-mf', { ability: 'snub' }, 0);
+  const res = S.publicState(r).result;
+  check('Snub + 2 Weapon Upgrades: 5 + 6 = 11, no defense, tokens used up', [res.hits[0].taken, r.step, me.tokens.weaponUp || 0], [11, 'main2', 0]);
+  foe.tokens.tagged = 1;
+  const before = foe.hp;
+  S.endTurn(r.code, 't-mf', 0);
+  check('Frag Tag goes off for 3 at the start of their turn', before - foe.hp, 3);
+
+  // Curb Stomp finishes a target left at 10 or less.
+  const stomp = M.ultimate.plan({});
+  const t = { name: 'T', hp: 8, alive: true, tokens: {} };
+  stomp.hit({ att: { name: 'Marcus' } }, t, []);
+  check('Curb Stomp finishes someone at 10 or less', t.hp <= 0, true);
+  const t2 = { name: 'T', hp: 12, alive: true, tokens: {} };
+  stomp.hit({ att: { name: 'Marcus' } }, t2, []);
+  check('...but not someone above 10', t2.hp, 12);
+}
+
 console.log('\nPick your own code');
 check('host picks NAIL', S.create('t-n', 'N', 'x', 'nail').room.code, 'NAIL');
 check('NAIL can be joined', !!S.join('NAIL', 't-n2', 'M', 'x').player, true);

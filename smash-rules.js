@@ -6,7 +6,7 @@ const H = require('./smash-heroes');
 const { HEROES, CARDS, fx } = H;
 
 // Bump this with every update. Every screen shows it at the bottom.
-const VERSION = '0.4';
+const VERSION = '0.5';
 const MAX_FIGHTERS = 4;
 const HAND_START = 4;
 const HAND_LIMIT = 6;
@@ -220,7 +220,7 @@ function start(code, token, now = Date.now()) {
   const hp = total === 2 ? 50 : 40;
   const bases = people.map((p) => ({ id: p.id, token: p.token, name: p.name, color: p.color, hero: p.hero || (p.hero = randomHero()) }))
     .concat(room.bots.map((b, i) => ({ id: b.id, bot: true, name: b.name, color: COLORS[(people.length + i) % COLORS.length], hero: b.hero })));
-  room.fighters = bases.map((b) => makeFighter(b, hp));
+  room.fighters = bases.map((b) => makeFighter(b, hp + (HEROES[b.hero].hpMod || 0))); // Marcus: glass cannon
   room.phase = 'play';
   room.turn = Math.floor(rng() * room.fighters.length);
   room.turnNo = 0;
@@ -259,6 +259,15 @@ function startTurn(room, now, first = false) {
   room.stepAt = now;
   const notes = [];
 
+  // Upkeep: a Frag Tag goes off (can't be blocked)
+  if (fx.has(f, 'tagged')) {
+    fx.drop(f, 'tagged');
+    fx.hurt(f, H.MT.tagDmg, notes);
+    f.lastDamage = H.MT.tagDmg;
+    notes.push(`The frag on ${f.name} goes off for ${H.MT.tagDmg}`);
+    if (checkDeaths(room)) { setEvent(room, notes.join('. ') + '.', { kind: 'burn' }); return; }
+    if (!f.alive) { setEvent(room, notes.join('. ') + '.', { kind: 'burn' }); nextTurn(room, now); return; }
+  }
   // Upkeep: Burn
   if (f.status.burn) {
     const dmg = 2 * f.status.burn;
@@ -398,6 +407,8 @@ function planFor(room, f, abilityId, opts = {}) {
     let bonus = 0;
     if (fx.has(f, 'avatarState')) bonus += 5;
     if (fx.has(f, 'biggoron')) bonus += 2;
+    if (fx.has(f, 'weaponUp')) bonus += H.MT.upBonus * f.tokens.weaponUp; // Marcus: all spent on this attack
+    if (room.turnFlags.torque) bonus += 3;                        // Torque Bow Charge
     plan.bonus = bonus;
     plan.dmg += bonus;
   }
@@ -438,6 +449,7 @@ function doAttack(room, f, args, now) {
   }
   if (room.turnFlags.cheapShot && !plan.ult) plan.undefendable = true;
 
+  if (plan.dmg > 0 && fx.has(f, 'weaponUp')) { plan.spentUp = f.tokens.weaponUp; delete f.tokens.weaponUp; }
   d.done = true;
   room.stepAt = now;
   const label = `${f.name} uses ${plan.name}${plan.note ? ' (' + plan.note + ')' : ''}${plan.dmg ? ' for ' + plan.dmg : ''}`;
@@ -460,8 +472,8 @@ function doAttack(room, f, args, now) {
   n = Math.max(1, n);
   let dodge = false;
   let dodgeRoll = null;
-  if (fx.has(t, 'airborne')) {
-    fx.drop(t, 'airborne');
+  if (fx.has(t, 'airborne') || fx.has(t, 'cover')) {
+    fx.drop(t, 'airborne'); fx.drop(t, 'cover');
     dodgeRoll = d6();
     dodge = dodgeRoll <= 2;
   }
@@ -469,7 +481,7 @@ function doAttack(room, f, args, now) {
   room.dice = { owner: t.id, kind: 'defense', values: Array(n).fill(0), kept: Array(n).fill(false), rollsLeft: 1, rolled: 0, done: false, offense: d.values };
   room.step = 'defend';
   let text = `${label} on ${t.name}! ${t.name} defends with ${hDef.name} (${n} dice${why.length ? ', ' + why.join(', ') : ''}).`;
-  if (dodgeRoll !== null) text += dodge ? ` Airborne: rolled ${dodgeRoll}, a clean dodge!` : ` Airborne: rolled ${dodgeRoll}, no dodge.`;
+  if (dodgeRoll !== null) text += dodge ? ` In Cover: rolled ${dodgeRoll}, the attack misses!` : ` In Cover: rolled ${dodgeRoll}, no luck.`;
   setEvent(room, text, { kind: 'attack', by: f.id, target: t.id, ability: args.ability });
   return { room };
 }
@@ -714,6 +726,7 @@ function doPlay(room, f, idx, args, now) {
 // Keep the dice of whichever symbol shows most (Aang's Avatar counts as every element).
 function botKeep(room, f, d) {
   const h = HEROES[f.hero];
+  if (h.smartBot) return smartKeep(room, f, d);
   const wild = f.hero === 'aang';
   let best = null;
   for (const sym of Object.keys(h.symbols)) {
@@ -721,6 +734,35 @@ function botKeep(room, f, d) {
     if (!best || n > best.n) best = { sym, n };
   }
   d.kept = d.values.map((v) => h.faces[v] === best.sym || (wild && v === 6));
+}
+
+// For heroes with unusual combos (two pair, sums, exact runs): try every keep choice,
+// reroll the rest a few times in our heads, and keep what scores best on average.
+function diceScore(room, f, vals) {
+  const h = HEROES[f.hero];
+  const ctx = { room, att: f, dice: vals };
+  let best = 0;
+  h.abilities.forEach((a) => {
+    if (a.match(ctx) < 0) return;
+    const p = a.plan({ room, att: f, lvl: lvlOf(f, a.id), tier: 0, opts: {}, d6: () => 3 });
+    best = Math.max(best, (p.dmg || 0) + (a.bot ? a.bot({ room, att: f }) : 0));
+  });
+  if (!f.sealed && h.ultimate.match(ctx) >= 0) best = Math.max(best, 100);
+  return best;
+}
+function smartKeep(room, f, d) {
+  const n = d.values.length;
+  const tries = 16;
+  let bestMask = 0, bestAvg = -1;
+  for (let mask = 0; mask < (1 << n); mask++) {
+    let total = 0;
+    for (let t = 0; t < tries; t++) {
+      const v = d.values.map((x, i) => ((mask >> i) & 1 ? x : 1 + Math.floor(Math.random() * 6)));
+      total += diceScore(room, f, v);
+    }
+    if (total / tries > bestAvg) { bestAvg = total / tries; bestMask = mask; }
+  }
+  d.kept = d.values.map((x, i) => !!((bestMask >> i) & 1));
 }
 
 function botChoose(room, f) {
